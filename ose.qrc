@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/icones">
+        <file alias="ico/pause">resources/icones/pause.png</file>
+        <file alias="ico/play">resources/icones/play.png</file>
+        <file alias="ico/reload">resources/icones/reload.png</file>
+        <file alias="ico/stepinto">resources/icones/step-into.png</file>
+        <file alias="ico/stepover">resources/icones/step-over.png</file>
+    </qresource>
+</RCC>
