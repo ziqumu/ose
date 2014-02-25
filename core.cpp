@@ -3,7 +3,7 @@
 Core::Core(QString flashLink, DisplayDriver* DD)
 {
     this->flash.resize(0x400000);
-    this->ram.resize(512000);
+    this->ram.resize(0x40000);
     this->DD = DD;
 
     //Init registers (cf SH3 manual)
@@ -62,6 +62,10 @@ uint32_t Core::getSpc(){
     return SPC;
 }
 
+uint32_t Core::getLastJumpOrigin(){
+    return lastJumpOrigin;
+}
+
 uint32_t Core::getRn_bank(int n){
     switch(n)
     {
@@ -114,6 +118,83 @@ uint8_t Core::Read_Byte(uint32_t address, bool execute)
     {
        return this->ram[address & 0xffffff];
     }
+    //Hardware address.. different fix to make the OS work..
+    else if(address == 0xfffffe92)  return 0;
+    //else if(address == 0xfffffea8)  return 0;
+    else if(address == 0xfffffea9)  return 0;
+    else if(address == 0xfffffedc)  return 0x80;
+    else if(address == 0xfffffede)  return 0x9;
+    //else if(address == 0xfffffee2)  return 0;
+    //else if(address == 0xfffffee3)  return 0;
+    //else if(address == 0xfffffee4)  return 0;
+    //else if(address == 0xfffffee5)  return 0;
+    else if(address == 0xffffff82)  return 0;
+    else if(address == 0xffffff86)  return 8;
+    else if(address == 0xfffffec0)  return ((int)(QDateTime::currentDateTime().toMSecsSinceEpoch()/50)) ; // RTC_GetTicks returns the value of the RTC counter. This counter is initialized every days at 00:00, and is incremented every 1/128
+     //else if(address == 0xffffffd4)  return 0;
+    //else if(address == 0xffffffd5)  return 0;
+    //else if(address == 0xffffffd6)  return 0;
+    //else if(address == 0xffffffd7)  return 0;
+    else if(address == 0xa4000004)  return 0x80; //When a key is pressed this value is 0x80 else 0
+    //else if(address == 0xa4000010)  return 0;
+    else if(address == 0xa4000011)  return 0;
+    else if(address == 0xa4000012)  return 0;
+    else if(address == 0xa4000013)  return 0;
+    else if(address == 0xa4000018)  return 0;
+    else if(address == 0xa4000019)  return 0;
+    else if(address == 0xa400001a)  return 0;
+    else if(address == 0xa400001b)  return 0;
+    else if(address == 0xa400001c)  return 0;
+    else if(address == 0xa400001d)  return 0;
+    else if(address == 0xa4000088)  return 0;
+    else if(address == 0xa4000089)  return 0;
+    else if(address == 0xa400008a)  return 0;
+    else if(address == 0xa400008b)  return 0;
+    else if(address == 0xa400008c)  return 0;
+    else if(address == 0xa400008d)  return 0;
+    else if(address == 0xa400008e)  return 0;
+    else if(address == 0xa400008f)  return 0;
+    else if((address&0xfffffffc) == 0xa4000014)  return 0;
+    else if(address == 0xa4000108)  return 0;
+    else if(address == 0xa4000109)  return 0;
+    else if(address == 0xa400010a)  return 0;
+    else if(address == 0xa400010b)  return 0;
+    else if(address == 0xa400010c)  return 0;
+    else if(address == 0xa400010d)  return 0;
+    else if(address == 0xa400010e)  return 0;
+    else if(address == 0xa400010f)  return 0;
+    else if(address == 0xa4000116)  return 0;
+    else if(address == 0xa4000117)  return 0;
+    else if(address == 0xa4000118)  return 0;
+    else if(address == 0xa4000119)  return 0;
+    else if(address == 0xa4000120)  return 0;
+    else if(address == 0xa4000122)  return 0;
+    else if(address == 0xa4000124)  return 0;
+    else if(address == 0xa4000126)  return 0;
+    else if(address == 0xa4000128)  return 0;
+    else if(address == 0xa400012a)  return 0;
+    else if(address == 0xa400012c)  return 0;
+    else if(address == 0xa4000136)  return 0;
+    else if(address == 0xa4000138)  return 0;
+    else if(address == 0xa400012e)  return 0;
+    else if(address == 0xa4080000)  return 0;
+    else if(address == 0xa4080001)  return 0;
+    else if(address == 0xa4080002)  return 0;
+    else if(address == 0xa4080003)  return 0;
+    else if(address == 0xa405014e)  return 0;
+    else if(address == 0xa4050148)  return 0;
+    else if(address == 0xa413fee4)  return 0;
+    else if(address == 0xa4410008)  return 0;
+    else if(address == 0xa4410009)  return 0;
+    else if(address == 0xa44c0020)  return 0;
+    else if(address == 0xa44c0030)  return 0;
+    else if(address == 0xa44c003c)  return 0;
+    else if((address&0xfffffffc) == 0xa5603a98)  return 0;
+    else if(address == 0xa5603aa0)  return 0;
+    else if(address == 0xa5603aa1)  return 0;
+    else if(address == 0xa5603aa2)  return 0;
+    else if(address == 0xa5603aa3)  return 0;
+    else if(address == 0xb4010000)  return 0;
     else
     {
         if(execute)
@@ -172,6 +253,481 @@ void Core::Write_Byte(uint32_t address, uint16_t value)
     {
         this->DD->putData(value&0xff);
     }
+    //Hardware address.. some fix to make the OS work..
+    else if((address&0xfffffffc) == 0xf2000000){}
+    else if((address&0xfffffffc) == 0xf2001000){}
+    else if((address&0xfffffffc) == 0xf2002000){}
+    else if((address&0xfffffffc) == 0xf2003000){}
+    else if((address&0xfffffffc) == 0xf2004000){}
+    else if((address&0xfffffffc) == 0xf2005000){}
+    else if((address&0xfffffffc) == 0xf2006000){}
+    else if((address&0xfffffffc) == 0xf2007000){}
+    else if((address&0xfffffffc) == 0xf2008000){}
+    else if((address&0xfffffffc) == 0xf2009000){}
+    else if((address&0xfffffffc) == 0xf200a000){}
+    else if((address&0xfffffffc) == 0xf200b000){}
+    else if((address&0xfffffffc) == 0xf200c000){}
+    else if((address&0xfffffffc) == 0xf200d000){}
+    else if((address&0xfffffffc) == 0xf200e000){}
+    else if((address&0xfffffffc) == 0xf200f000){}
+    else if((address&0xfffffffc) == 0xf2010000){}
+    else if((address&0xfffffffc) == 0xf2011000){}
+    else if((address&0xfffffffc) == 0xf2012000){}
+    else if((address&0xfffffffc) == 0xf2013000){}
+    else if((address&0xfffffffc) == 0xf2014000){}
+    else if((address&0xfffffffc) == 0xf2015000){}
+    else if((address&0xfffffffc) == 0xf2016000){}
+    else if((address&0xfffffffc) == 0xf2017000){}
+    else if((address&0xfffffffc) == 0xf2018000){}
+    else if((address&0xfffffffc) == 0xf2019000){}
+    else if((address&0xfffffffc) == 0xf201a000){}
+    else if((address&0xfffffffc) == 0xf201b000){}
+    else if((address&0xfffffffc) == 0xf201c000){}
+    else if((address&0xfffffffc) == 0xf201d000){}
+    else if((address&0xfffffffc) == 0xf201e000){}
+    else if((address&0xfffffffc) == 0xf201f000){}
+
+    else if((address&0xfffffffc) == 0xf2000100){}
+    else if((address&0xfffffffc) == 0xf2001100){}
+    else if((address&0xfffffffc) == 0xf2002100){}
+    else if((address&0xfffffffc) == 0xf2003100){}
+    else if((address&0xfffffffc) == 0xf2004100){}
+    else if((address&0xfffffffc) == 0xf2005100){}
+    else if((address&0xfffffffc) == 0xf2006100){}
+    else if((address&0xfffffffc) == 0xf2007100){}
+    else if((address&0xfffffffc) == 0xf2008100){}
+    else if((address&0xfffffffc) == 0xf2009100){}
+    else if((address&0xfffffffc) == 0xf200a100){}
+    else if((address&0xfffffffc) == 0xf200b100){}
+    else if((address&0xfffffffc) == 0xf200c100){}
+    else if((address&0xfffffffc) == 0xf200d100){}
+    else if((address&0xfffffffc) == 0xf200e100){}
+    else if((address&0xfffffffc) == 0xf200f100){}
+    else if((address&0xfffffffc) == 0xf2010100){}
+    else if((address&0xfffffffc) == 0xf2011100){}
+    else if((address&0xfffffffc) == 0xf2012100){}
+    else if((address&0xfffffffc) == 0xf2013100){}
+    else if((address&0xfffffffc) == 0xf2014100){}
+    else if((address&0xfffffffc) == 0xf2015100){}
+    else if((address&0xfffffffc) == 0xf2016100){}
+    else if((address&0xfffffffc) == 0xf2017100){}
+    else if((address&0xfffffffc) == 0xf2018100){}
+    else if((address&0xfffffffc) == 0xf2019100){}
+    else if((address&0xfffffffc) == 0xf201a100){}
+    else if((address&0xfffffffc) == 0xf201b100){}
+    else if((address&0xfffffffc) == 0xf201c100){}
+    else if((address&0xfffffffc) == 0xf201d100){}
+    else if((address&0xfffffffc) == 0xf201e100){}
+    else if((address&0xfffffffc) == 0xf201f100){}
+
+    else if((address&0xfffffffc) == 0xf2000200){}
+    else if((address&0xfffffffc) == 0xf2001200){}
+    else if((address&0xfffffffc) == 0xf2002200){}
+    else if((address&0xfffffffc) == 0xf2003200){}
+    else if((address&0xfffffffc) == 0xf2004200){}
+    else if((address&0xfffffffc) == 0xf2005200){}
+    else if((address&0xfffffffc) == 0xf2006200){}
+    else if((address&0xfffffffc) == 0xf2007200){}
+    else if((address&0xfffffffc) == 0xf2008200){}
+    else if((address&0xfffffffc) == 0xf2009200){}
+    else if((address&0xfffffffc) == 0xf200a200){}
+    else if((address&0xfffffffc) == 0xf200b200){}
+    else if((address&0xfffffffc) == 0xf200c200){}
+    else if((address&0xfffffffc) == 0xf200d200){}
+    else if((address&0xfffffffc) == 0xf200e200){}
+    else if((address&0xfffffffc) == 0xf200f200){}
+    else if((address&0xfffffffc) == 0xf2010200){}
+    else if((address&0xfffffffc) == 0xf2011200){}
+    else if((address&0xfffffffc) == 0xf2012200){}
+    else if((address&0xfffffffc) == 0xf2013200){}
+    else if((address&0xfffffffc) == 0xf2014200){}
+    else if((address&0xfffffffc) == 0xf2015200){}
+    else if((address&0xfffffffc) == 0xf2016200){}
+    else if((address&0xfffffffc) == 0xf2017200){}
+    else if((address&0xfffffffc) == 0xf2018200){}
+    else if((address&0xfffffffc) == 0xf2019200){}
+    else if((address&0xfffffffc) == 0xf201a200){}
+    else if((address&0xfffffffc) == 0xf201b200){}
+    else if((address&0xfffffffc) == 0xf201c200){}
+    else if((address&0xfffffffc) == 0xf201d200){}
+    else if((address&0xfffffffc) == 0xf201e200){}
+    else if((address&0xfffffffc) == 0xf201f200){}
+
+    else if((address&0xfffffffc) == 0xf2000300){}
+    else if((address&0xfffffffc) == 0xf2001300){}
+    else if((address&0xfffffffc) == 0xf2002300){}
+    else if((address&0xfffffffc) == 0xf2003300){}
+    else if((address&0xfffffffc) == 0xf2004300){}
+    else if((address&0xfffffffc) == 0xf2005300){}
+    else if((address&0xfffffffc) == 0xf2006300){}
+    else if((address&0xfffffffc) == 0xf2007300){}
+    else if((address&0xfffffffc) == 0xf2008300){}
+    else if((address&0xfffffffc) == 0xf2009300){}
+    else if((address&0xfffffffc) == 0xf200a300){}
+    else if((address&0xfffffffc) == 0xf200b300){}
+    else if((address&0xfffffffc) == 0xf200c300){}
+    else if((address&0xfffffffc) == 0xf200d300){}
+    else if((address&0xfffffffc) == 0xf200e300){}
+    else if((address&0xfffffffc) == 0xf200f300){}
+    else if((address&0xfffffffc) == 0xf2010300){}
+    else if((address&0xfffffffc) == 0xf2011300){}
+    else if((address&0xfffffffc) == 0xf2012300){}
+    else if((address&0xfffffffc) == 0xf2013300){}
+    else if((address&0xfffffffc) == 0xf2014300){}
+    else if((address&0xfffffffc) == 0xf2015300){}
+    else if((address&0xfffffffc) == 0xf2016300){}
+    else if((address&0xfffffffc) == 0xf2017300){}
+    else if((address&0xfffffffc) == 0xf2018300){}
+    else if((address&0xfffffffc) == 0xf2019300){}
+    else if((address&0xfffffffc) == 0xf201a300){}
+    else if((address&0xfffffffc) == 0xf201b300){}
+    else if((address&0xfffffffc) == 0xf201c300){}
+    else if((address&0xfffffffc) == 0xf201d300){}
+    else if((address&0xfffffffc) == 0xf201e300){}
+    else if((address&0xfffffffc) == 0xf201f300){}
+
+    else if(address == 0xfffffe92){}
+    else if(address == 0xfffffe93){}
+    else if(address == 0xfffffe94){}
+    else if(address == 0xfffffe95){}
+    else if(address == 0xfffffea0){}
+    else if(address == 0xfffffea1){}
+    else if(address == 0xfffffea2){}
+    else if(address == 0xfffffea3){}
+    else if(address == 0xfffffea4){}
+    else if(address == 0xfffffea5){}
+    else if(address == 0xfffffea6){}
+    else if(address == 0xfffffea7){}
+    else if(address == 0xfffffea8){}
+    else if(address == 0xfffffea9){}
+    else if(address == 0xfffffeac){}
+    else if(address == 0xfffffead){}
+    else if(address == 0xfffffeae){}
+    else if(address == 0xfffffeaf){}
+    else if(address == 0xfffffeb0){}
+    else if(address == 0xfffffeb1){}
+    else if(address == 0xfffffeb2){}
+    else if(address == 0xfffffeb3){}
+    else if(address == 0xfffffeb4){}
+    else if(address == 0xfffffeb5){}
+    else if(address == 0xfffffeb6){}
+    else if(address == 0xfffffeb7){}
+    else if(address == 0xfffffed0){}
+    else if(address == 0xfffffed2){}
+    else if(address == 0xfffffed4){}
+    else if(address == 0xfffffed6){}
+    else if(address == 0xfffffed8){}
+    else if(address == 0xfffffeda){}
+    else if(address == 0xfffffedc){}
+    else if(address == 0xfffffede){}
+    else if(address == 0xfffffee2){}
+    else if(address == 0xfffffee3){}
+    else if(address == 0xfffffee4){}
+    else if(address == 0xfffffee5){}
+    else if(address == 0xffffff80){}
+    else if(address == 0xffffff81){}
+    else if(address == 0xffffff82){}
+    else if(address == 0xffffff84){}
+    else if(address == 0xffffff85){}
+    else if(address == 0xffffff86){}
+    else if(address == 0xffffff87){}
+    else if(address == 0xffffff88){}
+    else if(address == 0xffffffe0){}
+    else if(address == 0xffffffe1){}
+    else if(address == 0xffffffe2){}
+    else if(address == 0xffffffe3){}
+    else if(address == 0xffffffec){}
+    else if(address == 0xffffffed){}
+    else if(address == 0xffffffee){}
+    else if(address == 0xffffffef){}
+    else if(address == 0xa4000004){}
+    else if(address == 0xa4000005){}
+    else if(address == 0xa4000010){}
+    else if(address == 0xa4000011){}
+    else if(address == 0xa4000012){}
+    else if(address == 0xa4000013){}
+    else if((address&0xfffffffc) == 0xa4000014){}
+    else if(address == 0xa4000018){}
+    else if(address == 0xa4000019){}
+    else if(address == 0xa400001a){}
+    else if(address == 0xa400001b){}
+    else if(address == 0xa4000088){}
+    else if(address == 0xa4000089){}
+    else if(address == 0xa400008a){}
+    else if(address == 0xa400008b){}
+    else if(address == 0xa400008c){}
+    else if(address == 0xa400008d){}
+    else if(address == 0xa400008e){}
+    else if(address == 0xa400008f){}
+    else if(address == 0xa40000b4){}
+    else if(address == 0xa40000b5){}
+    else if(address == 0xa40000b6){}
+    else if(address == 0xa40000b7){}
+    else if(address == 0xa4000100){}
+    else if(address == 0xa4000101){}
+    else if(address == 0xa4000102){}
+    else if(address == 0xa4000103){}
+    else if(address == 0xa4000104){}
+    else if(address == 0xa4000105){}
+    else if(address == 0xa4000106){}
+    else if(address == 0xa4000107){}
+    else if(address == 0xa4000108){}
+    else if(address == 0xa4000109){}
+    else if(address == 0xa400010a){}
+    else if(address == 0xa400010b){}
+    else if(address == 0xa400010c){}
+    else if(address == 0xa400010d){}
+    else if(address == 0xa400010e){}
+    else if(address == 0xa400010f){}
+    else if(address == 0xa4000110){}
+    else if(address == 0xa4000111){}
+    else if(address == 0xa4000112){}
+    else if(address == 0xa4000113){}
+    else if(address == 0xa4000114){}
+    else if(address == 0xa4000115){}
+    else if(address == 0xa4000116){}
+    else if(address == 0xa4000117){}
+    else if(address == 0xa4000118){}
+    else if(address == 0xa4000119){}
+    else if(address == 0xa400011a){}
+    else if(address == 0xa400011b){}
+    else if(address == 0xa4000122){}
+    else if(address == 0xa4000124){}
+    else if(address == 0xa4000126){}
+    else if(address == 0xa4000128){}
+    else if(address == 0xa400012a){}
+    else if(address == 0xa400012c){}
+    else if(address == 0xa400012e){}
+    else if(address == 0xa4000136){}
+    else if(address == 0xa4000138){}
+    else if(address == 0xa400014e){}
+    else if(address == 0xa4050146){}
+    else if(address == 0xa4050148){}
+    else if(address == 0xa405014a){}
+    else if(address == 0xa405014e){}
+    else if(address == 0xa405015a){}
+    else if(address == 0xa405015c){}
+    else if(address == 0xa405017b){}
+    else if(address == 0xa4080000){}
+    else if(address == 0xa4080001){}
+    else if(address == 0xa4080002){}
+    else if(address == 0xa4080003){}
+    else if(address == 0xa4080004){}
+    else if(address == 0xa4080005){}
+    else if(address == 0xa40a0000){}
+    else if(address == 0xa40a0004){}
+    else if(address == 0xa40a0008){}
+    else if(address == 0xa40a0009){}
+    else if(address == 0xa413fee0){}
+    else if(address == 0xa413fee1){}
+    else if(address == 0xa413fee2){}
+    else if(address == 0xa413fee3){}
+    else if(address == 0xa413fee4){}
+    else if(address == 0xa413fee5){}
+    else if(address == 0xa413fee6){}
+    else if(address == 0xa413fee7){}
+    else if(address == 0xa4410008){}
+    else if(address == 0xa4410009){}
+    else if(address == 0xa44c0004){}
+    else if(address == 0xa44c0005){}
+    else if(address == 0xa44c0006){}
+    else if(address == 0xa44c0020){}
+    else if(address == 0xa44c0030){}
+    else if(address == 0xa44c0034){}
+    else if(address == 0xa44c0035){}
+    else if(address == 0xa44c0036){}
+    else if(address == 0xa44c0037){}
+    else if(address == 0xa44c0038){}
+    else if(address == 0xa44c0039){}
+    else if(address == 0xa44c003a){}
+    else if(address == 0xa44c003b){}
+    else if(address == 0xa44c003c){}
+    else if(address == 0xa4fd0000){}
+    else if(address == 0xa4fd0001){}
+    else if(address == 0xa4fd0002){}
+    else if(address == 0xa4fd0003){}
+    else if(address == 0xa4fd0004){}
+    else if(address == 0xa4fd0005){}
+    else if(address == 0xa4fd0006){}
+    else if(address == 0xa4fd0007){}
+    else if(address == 0xa4fd0008){}
+    else if(address == 0xa4fd0009){}
+    else if(address == 0xa4fd000a){}
+    else if(address == 0xa4fd000b){}
+    else if(address == 0xa4fd0010){}
+    else if(address == 0xa4fd0011){}
+    else if(address == 0xa4fd0012){}
+    else if(address == 0xa4fd0013){}
+    else if(address == 0xa4fd0014){}
+    else if(address == 0xa4fd0015){}
+    else if(address == 0xa4fd0016){}
+    else if(address == 0xa4fd0017){}
+    else if(address == 0xa4fd0018){}
+    else if(address == 0xa4fd0019){}
+    else if(address == 0xa4fd001a){}
+    else if(address == 0xa4fd001b){}
+    else if(address == 0xa4fd0024){}
+    else if(address == 0xa4fd0025){}
+    else if(address == 0xa4fd0026){}
+    else if(address == 0xa4fd0027){}
+    else if(address == 0xa4fd0028){}
+    else if(address == 0xa4fd0029){}
+    else if(address == 0xa4fd002a){}
+    else if(address == 0xa4fd002b){}
+    else if(address == 0xa4fd0030){}
+    else if(address == 0xa4fd0031){}
+    else if(address == 0xa4fd0032){}
+    else if(address == 0xa4fd0033){}
+    else if(address == 0xa4fd0034){}
+    else if(address == 0xa4fd0035){}
+    else if(address == 0xa4fd0036){}
+    else if(address == 0xa4fd0037){}
+    else if(address == 0xa4fd0038){}
+    else if(address == 0xa4fd0039){}
+    else if(address == 0xa4fd003a){}
+    else if(address == 0xa4fd003b){}
+    else if((address&0xfffffffc) == 0xa5600000){}
+    else if((address&0xfffffffc) == 0xa5600004){}
+    else if((address&0xfffffffc) == 0xa5600008){}
+    else if((address&0xfffffffc) == 0xa560000c){}
+    else if((address&0xfffffffc) == 0xa5600010){}
+    else if((address&0xfffffffc) == 0xa5600014){}
+    else if((address&0xfffffffc) == 0xa5600018){}
+    else if((address&0xfffffffc) == 0xa560001c){}
+    else if((address&0xfffffffc) == 0xa5600020){}
+    else if((address&0xfffffffc) == 0xa5600024){}
+    else if((address&0xfffffffc) == 0xa5600028){}
+    else if((address&0xfffffffc) == 0xa560002c){}
+    else if((address&0xfffffffc) == 0xa5600030){}
+    else if((address&0xfffffffc) == 0xa5600034){}
+    else if((address&0xfffffffc) == 0xa5600038){}
+    else if((address&0xfffffffc) == 0xa560003c){}
+    else if((address&0xfffffffc) == 0xa5600040){}
+    else if((address&0xfffffffc) == 0xa5600044){}
+    else if((address&0xfffffffc) == 0xa5600048){}
+    else if((address&0xfffffffc) == 0xa560004c){}
+    else if((address&0xfffffffc) == 0xa5600050){}
+    else if((address&0xfffffffc) == 0xa5600054){}
+    else if((address&0xfffffffc) == 0xa5600058){}
+    else if((address&0xfffffffc) == 0xa560005c){}
+    else if((address&0xfffffffc) == 0xa5600060){}
+    else if((address&0xfffffffc) == 0xa5600064){}
+    else if((address&0xfffffffc) == 0xa5600068){}
+    else if((address&0xfffffffc) == 0xa560006c){}
+    else if((address&0xfffffffc) == 0xa5600070){}
+    else if((address&0xfffffffc) == 0xa5600074){}
+    else if((address&0xfffffffc) == 0xa5600078){}
+    else if((address&0xfffffffc) == 0xa560007c){}
+    else if((address&0xfffffffc) == 0xa5600080){}
+    else if((address&0xfffffffc) == 0xa5600084){}
+    else if((address&0xfffffffc) == 0xa5600088){}
+    else if((address&0xfffffffc) == 0xa560008c){}
+    else if((address&0xfffffffc) == 0xa5600090){}
+    else if((address&0xfffffffc) == 0xa5600094){}
+    else if((address&0xfffffffc) == 0xa5600098){}
+    else if((address&0xfffffffc) == 0xa560009c){}
+    else if((address&0xfffffffc) == 0xa56000a0){}
+    else if((address&0xfffffffc) == 0xa56000a4){}
+    else if((address&0xfffffffc) == 0xa56000a8){}
+    else if((address&0xfffffffc) == 0xa56000ac){}
+    else if((address&0xfffffffc) == 0xa56000b0){}
+    else if((address&0xfffffffc) == 0xa56000b4){}
+    else if((address&0xfffffffc) == 0xa56000b8){}
+    else if((address&0xfffffffc) == 0xa56000bc){}
+    else if((address&0xfffffffc) == 0xa56000c0){}
+    else if((address&0xfffffffc) == 0xa56000c4){}
+    else if((address&0xfffffffc) == 0xa56000c8){}
+    else if((address&0xfffffffc) == 0xa56000cc){}
+    else if((address&0xfffffffc) == 0xa56000d0){}
+    else if((address&0xfffffffc) == 0xa56000d4){}
+    else if((address&0xfffffffc) == 0xa56000d8){}
+    else if((address&0xfffffffc) == 0xa56000dc){}
+    else if((address&0xfffffffc) == 0xa56000e0){}
+    else if((address&0xfffffffc) == 0xa56000e4){}
+    else if((address&0xfffffffc) == 0xa56000e8){}
+    else if((address&0xfffffffc) == 0xa56000ec){}
+    else if((address&0xfffffffc) == 0xa56000f0){}
+    else if((address&0xfffffffc) == 0xa56000f4){}
+    else if((address&0xfffffffc) == 0xa56000f8){}
+    else if((address&0xfffffffc) == 0xa56000fc){}
+
+
+    else if((address&0xfffffffc) == 0xa5600100){}
+    else if((address&0xfffffffc) == 0xa5600104){}
+    else if((address&0xfffffffc) == 0xa5600108){}
+    else if((address&0xfffffffc) == 0xa560010c){}
+    else if((address&0xfffffffc) == 0xa5600110){}
+    else if((address&0xfffffffc) == 0xa5600114){}
+    else if((address&0xfffffffc) == 0xa5600118){}
+    else if((address&0xfffffffc) == 0xa560011c){}
+    else if((address&0xfffffffc) == 0xa5600120){}
+    else if((address&0xfffffffc) == 0xa5600124){}
+    else if((address&0xfffffffc) == 0xa5600128){}
+    else if((address&0xfffffffc) == 0xa560012c){}
+    else if((address&0xfffffffc) == 0xa5600130){}
+    else if((address&0xfffffffc) == 0xa5600134){}
+    else if((address&0xfffffffc) == 0xa5600138){}
+    else if((address&0xfffffffc) == 0xa560013c){}
+    else if((address&0xfffffffc) == 0xa5600140){}
+    else if((address&0xfffffffc) == 0xa5600144){}
+    else if((address&0xfffffffc) == 0xa5600148){}
+    else if((address&0xfffffffc) == 0xa560014c){}
+    else if((address&0xfffffffc) == 0xa5600150){}
+    else if((address&0xfffffffc) == 0xa5600154){}
+    else if((address&0xfffffffc) == 0xa5600158){}
+    else if((address&0xfffffffc) == 0xa560015c){}
+    else if((address&0xfffffffc) == 0xa5600160){}
+    else if((address&0xfffffffc) == 0xa5600164){}
+    else if((address&0xfffffffc) == 0xa5600168){}
+    else if((address&0xfffffffc) == 0xa560016c){}
+    else if((address&0xfffffffc) == 0xa5600170){}
+    else if((address&0xfffffffc) == 0xa5600174){}
+    else if((address&0xfffffffc) == 0xa5600178){}
+    else if((address&0xfffffffc) == 0xa560017c){}
+    else if((address&0xfffffffc) == 0xa5600180){}
+    else if((address&0xfffffffc) == 0xa5600184){}
+    else if((address&0xfffffffc) == 0xa5600188){}
+    else if((address&0xfffffffc) == 0xa560018c){}
+    else if((address&0xfffffffc) == 0xa5600190){}
+    else if((address&0xfffffffc) == 0xa5600194){}
+    else if((address&0xfffffffc) == 0xa5600198){}
+    else if((address&0xfffffffc) == 0xa560019c){}
+    else if((address&0xfffffffc) == 0xa56001a0){}
+    else if((address&0xfffffffc) == 0xa56001a4){}
+    else if((address&0xfffffffc) == 0xa56001a8){}
+    else if((address&0xfffffffc) == 0xa56001ac){}
+    else if((address&0xfffffffc) == 0xa56001b0){}
+    else if((address&0xfffffffc) == 0xa56001b4){}
+    else if((address&0xfffffffc) == 0xa56001b8){}
+    else if((address&0xfffffffc) == 0xa56001bc){}
+    else if((address&0xfffffffc) == 0xa56001c0){}
+    else if((address&0xfffffffc) == 0xa56001c4){}
+    else if((address&0xfffffffc) == 0xa56001c8){}
+    else if((address&0xfffffffc) == 0xa56001cc){}
+    else if((address&0xfffffffc) == 0xa56001d0){}
+    else if((address&0xfffffffc) == 0xa56001d4){}
+    else if((address&0xfffffffc) == 0xa56001d8){}
+    else if((address&0xfffffffc) == 0xa56001dc){}
+    else if((address&0xfffffffc) == 0xa56001e0){}
+    else if((address&0xfffffffc) == 0xa56001e4){}
+    else if((address&0xfffffffc) == 0xa56001e8){}
+    else if((address&0xfffffffc) == 0xa56001ec){}
+    else if((address&0xfffffffc) == 0xa56001f0){}
+    else if((address&0xfffffffc) == 0xa56001f4){}
+    else if((address&0xfffffffc) == 0xa56001f8){}
+    else if((address&0xfffffffc) == 0xa56001fc){}
+    else if(address == 0xa5603a98){}
+    else if(address == 0xa5603a99){}
+    else if(address == 0xa5603a9a){}
+    else if(address == 0xa5603a9b){}
+    else if(address == 0xa5603a9c){}
+    else if(address == 0xa5603a9d){}
+    else if(address == 0xa5603a9e){}
+    else if(address == 0xa5603a9f){}
+    else if(address == 0xa5603aa0){}
+    else if(address == 0xa5603aa1){}
+    else if(address == 0xa5603aa2){}
+    else if(address == 0xa5603aa3){}
     else
         throw emulator_exception(address, this->PC, 0, EMULATOR_ACTION_WRITE,  EMULATOR_ERROR_ADDRESSNOTFOUND);
 }
@@ -456,6 +1012,7 @@ void Core::Execute(uint16_t instruction)
                             case b0000: //0000000000001011 : RTS
                                 if(nibble[1] == 0)
                                 {
+                                    lastJumpOrigin = PC-4;
                                     temp=PC;
                                     PC=PR+2;
                                     Delay_Slot(temp+2);
@@ -477,6 +1034,7 @@ void Core::Execute(uint16_t instruction)
                             case b0010: //0000000000101011 : RTE
                                 if(nibble[1] == 0)
                                 {
+                                    lastJumpOrigin = PC-4;
                                     temp=PC;
                                     PC=SPC;
                                     SR=SSR;
@@ -1219,7 +1777,7 @@ void Core::Execute(uint16_t instruction)
                                 PC+=2;
                                 done = true;
                                 break;
-                            case b0001: //0100mmmm00010110 : DS.L @Rm+,MACL
+                            case b0001: //0100mmmm00010110 : LDS.L @Rm+,MACL
                                 m = nibble[1];
                                 MACL=Read_Long(R[m]);
                                 R[m]+=4;
@@ -1407,6 +1965,7 @@ void Core::Execute(uint16_t instruction)
                     case b1011:
                         switch(nibble[2]) {
                             case b0000: //0100nnnn00001011 : JSR @Rn
+                                lastJumpOrigin = PC-4;
                                 n = nibble[1];
                                 PR=PC;
                                 PC=R[n]+2;
@@ -1425,6 +1984,7 @@ void Core::Execute(uint16_t instruction)
                                 done=true;
                                 break;
                             case b0010: //0100nnnn00101011 : JMP @Rn
+                                lastJumpOrigin = PC-4;
                                 n = nibble[1];
                                 temp=PC;
                                 PC=R[n]+2;
@@ -1794,7 +2354,10 @@ void Core::Execute(uint16_t instruction)
                          d = (nibble[2]<<4) + nibble[3];
                         if ((d&0x80)==0) disp=(0x000000FF & (long)d);
                         else disp=(0xFFFFFF00 | (long)d);
-                        if (T_flag==1) PC=PC+(disp<<1)+4;
+                        if (T_flag==1){
+                            lastJumpOrigin = PC-4;
+                            PC=PC+(disp<<1)+4;
+                        }
                         else PC+=2;
                         done = true;
                         break;
@@ -1802,7 +2365,9 @@ void Core::Execute(uint16_t instruction)
                         d = (nibble[2]<<4) + nibble[3];
                         if ((d&0x80)==0) disp=(0x000000FF & (long)d);
                         else disp=(0xFFFFFF00 | (long)d);
-                        if (T_flag==0) PC=PC+(disp<<1)+4;
+                        if (T_flag==0){
+                            lastJumpOrigin = PC-4;
+                            PC=PC+(disp<<1)+4;}
                         else PC+=2;
                         done = true;
                         break;
@@ -1812,6 +2377,7 @@ void Core::Execute(uint16_t instruction)
                         if ((d&0x80)==0) disp=(0x000000FF & (long)d);
                             else disp=(0xFFFFFF00 | (long)d);
                         if (T_flag==1) {
+                            lastJumpOrigin = PC-4;
                             PC=PC+(disp<<1)+2;
                             Delay_Slot(temp+2);
                         }
@@ -1824,6 +2390,7 @@ void Core::Execute(uint16_t instruction)
                         if ((d&0x80)==0) disp=(0x000000FF & (long)d);
                         else disp=(0xFFFFFF00 | (long)d);
                         if (T_flag==0) {
+                            lastJumpOrigin = PC-4;
                             PC=PC+(disp<<1)+2;
                             Delay_Slot(temp+2);
                         }
@@ -1845,6 +2412,7 @@ void Core::Execute(uint16_t instruction)
                 d = (nibble[1]<<8) + (nibble[2]<<4) + nibble[3];
                 if ((d&0x800)==0) disp=(0x00000FFF & d);
                 else disp=(0xFFFFF000 | d);
+                lastJumpOrigin = PC-4;
                 temp=PC;
                 PC=PC+(disp<<1)+2;
                 Delay_Slot(temp+2);
@@ -1854,6 +2422,7 @@ void Core::Execute(uint16_t instruction)
                 d = (nibble[1]<<8) + (nibble[2]<<4) + nibble[3];
                 if ((d&0x800)==0) disp=(0x00000FFF & d);
                 else disp=(0xFFFFF000 | d);
+                lastJumpOrigin = PC-4;
                 PR=PC;
                 PC=PC+(disp<<1)+2;
                 Delay_Slot(PR+2);
@@ -1873,6 +2442,7 @@ void Core::Execute(uint16_t instruction)
                         disp=(0x000000FF & (long)d);
                         Write_Word(GBR+(disp<<1),R[0]);
                         PC+=2;
+                        done = true;
                         break;
                     case b0010: //11000010dddddddd : MOV.L R0,@(disp,GBR)
                         d = (nibble[2]<<4) + nibble[3];

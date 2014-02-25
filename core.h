@@ -6,6 +6,7 @@
 #include <vector>
 #include <QFile>
 #include <QDebug>
+#include <QDateTime>
 #include <cstdint> //width constant types : http://www.cplusplus.com/reference/cstdint/
 #include "emulator_exception.hpp"
 #include "displaydriver.h"
@@ -14,7 +15,8 @@
 #define Q ((*(struct SR0 *)(&SR)).Q0)
 #define S ((*(struct SR0 *)(&SR)).S0)
 //#define T ((*(struct SR0 *)(&SR)).T0)
-#define T_flag ((*(struct SR0 *)(&SR)).T0)
+//#define T_flag ((*(struct SR0 *)(&SR)).T0)
+#define T_flag T
 #define RF1 ((*(struct SR0 *)(&SR)).RF10)
 #define RF0 ((*(struct SR0 *)(&SR)).RF00)
 
@@ -39,6 +41,7 @@ class Core
         bool T;
         uint32_t SSR,SPC;
         uint8_t RS;
+        uint8_t test = 1;
 
         uint32_t R0_BANK;
         uint32_t R1_BANK;
@@ -48,6 +51,7 @@ class Core
         uint32_t R5_BANK;
         uint32_t R6_BANK;
         uint32_t R7_BANK;
+        uint32_t lastJumpOrigin = 0;
 
 		int8_t display_select = 0;
 		int8_t display_data = 0;
@@ -101,6 +105,7 @@ class Core
         uint32_t getSsr();
         uint32_t getSpc();
         uint32_t getRn_bank(int n);
+        uint32_t getLastJumpOrigin();
 
 
 

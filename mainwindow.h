@@ -16,6 +16,7 @@
 #include <cstdint>
 #include "instructions_widget.h"
 #include <QFileDialog>
+#include "register_widget.h"
 
 namespace Ui {
 class MainWindow;
@@ -38,15 +39,16 @@ private:
     CoreThread *coreThread;
     QString Log;
     InstructionsWidget *instructions;
+    RegisterWidget *registers;
 public slots:
     void screenSetByte(uint8_t x, uint8_t y, uint8_t byte);
     void play();
     void pause();
-    void log(QString message);
-    void logError(QString message);
-    void logWarning(QString message);
-    void logInfo(QString message);
-    void logDebug(QString message);
+    void log(QString message, uint32_t offset  = 0xffffffff);
+    void logError(QString message, uint32_t offset  = 0xffffffff);
+    void logWarning(QString message, uint32_t offset  = 0xffffffff);
+    void logInfo(QString message, uint32_t offset  = 0xffffffff);
+    void logDebug(QString message, uint32_t offset  = 0xffffffff);
 signals:
     void initCore(QString flashLink, DisplayDriver* D);
 

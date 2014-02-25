@@ -1,14 +1,12 @@
 #include "Disassembler.h"
 
-#define numHex(num,nbrNibble) QString("%1").arg((long)num, nbrNibble, 16, QChar('0')).right(8)
-#define rHex(num) QString::number((long)num, 16).right(8)
+#define rHex(num) QString::number((int32_t)num, 16).right(8)
 #define rDec(num) QString::number((long)num, 10)
 
 
-Disassembler::Disassembler(Core* core, bool getBetterResults)
+Disassembler::Disassembler(Core* core)
 {
    this->core = core;
-   this->getBetterResults = getBetterResults;
 }
 
 InstructionRow Disassembler::read(uint32_t offset, int32_t value)
@@ -25,6 +23,7 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
         rtn.hint = "";
         rtn.instruction = "";
         uint32_t pc = 0;
+        uint32_t tmp = 0;
     //init values
         pc = offset + 4;
         rtn.offset = offset;
@@ -54,23 +53,17 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                 return rtn;
             }
         }
-     //Get Better Result
-        Core* core = NULL;
-        if(getBetterResults)
-        {
-            core = this->core;
-        }
     //temp
         uint8_t n;
         uint8_t m;
-        uint8_t d;
+        uint32_t d;
+        uint32_t i;
     //Cut in nibble (4 bits)
         uint8_t nibble[4];
         nibble[0] = (value >> 12)&0xf;
         nibble[1] = (value >> 8)&0xf;
         nibble[2] = (value >> 4)&0xf;
         nibble[3] = (value)&0xf;
-        QString temp;
 
         /*List of classes css. Do not put h' inside thes tags
          *
@@ -78,10 +71,8 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
          * [n][/n] : the n parameter
          * [m][/m] : the m parameter
          * [d][/d] : the d (disp, displacement) parameter
+         * [i][/i] : the i (imm, immediate data) parameter
          * [reg][/reg] : register (if there is no [n] or [m]) (T bit too)
-         * [res][/res] : result of calcul
-         *
-         * When the instruction change the value of something, in the result I use -> ( "=" is used for calcul)
        */
         switch(nibble[0]) // There is ~186 instructions
         {
@@ -94,104 +85,78 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]sr[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getSr()) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b0001: //0000nnnn00010010 : STC GBR,Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]gbr[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getGbr()) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b0010: //0000nnnn00100010 : STC VBR,Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]vbr[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getVbr()) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b0011: //0000nnnn00110010 : STC SSR,Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]ssr[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getSsr()) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b0100: //0000nnnn01000010 : STC SPC,Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]spc[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getSpc()) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1000: //0000nnnn10000010 : STC R0_BANK,Rm
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]r0_bank[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(0)) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1001: //0000nnnn10010010 : STC R1_BANK,Rm
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]r1_bank[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(1)) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1010: //0000nnnn10100010 : STC R2_BANK,Rm
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]r2_bank[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(2)) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1011: //0000nnnn10110010 : STC R3_BANK,Rm
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]r3_bank[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(3)) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1100: //0000nnnn11000010 : STC R4_BANK,Rm
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]r4_bank[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(4)) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1101: //0000nnnn11010010 : STC R5_BANK,Rm
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]r5_bank[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(5)) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1110: //0000nnnn11100010 : STC R6_BANK,Rm
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]r6_bank[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(6)) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1111: //0000nnnn11110010 : STC R7_BANK,Rm
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc [reg]r7_bank[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(7)) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store Control Register";
                                 break;
                         } break;
@@ -201,26 +166,18 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "bsrf [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "Jump to (h'[n]" + rHex(core->getR(n)) + "[/n]+h'[reg]" + rHex(pc)
-                                            + "[/reg])=h'[res]" + rHex(core->getR(n) + pc) + "[/res]";
-                                rtn.hint = "Branch Subroutine Far | delayed";
+                                rtn.hint = "Branch Subroutine Far | Delayed";
                                 break;
                             case b0010: //0000nnnn00100011 : BRAF Rm
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "braf [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "Jump to (h'[n]" + rHex(core->getR(n)) + "[/n]+h'[reg]" + rHex(pc)
-                                            + "[/reg])=h'[res]" + rHex(core->getR(n) + pc) + "[/res]";
-                                rtn.hint = "Branch Far | delayed";
+                                rtn.hint = "Branch Far | Delayed";
                                 break;
-                                case b1000: //0000nnnn10000011 : PREF @Rn
+                            case b1000: //0000nnnn10000011 : PREF @Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "pref @[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result += "h'[n]" + rHex(core->getR(n)) + "[/n]";
                                 rtn.hint = "Prefetch Data to the Cache | Not emulated";
                                 break;
                         }break;
@@ -230,9 +187,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.b [m]r" + rDec(m) + "[/m],@([reg]r0[/reg],[n]r" + rDec(n) + "[/n])";
-                        if(core != NULL)
-                            rtn.result = "h'[m]" + rHex(0xff & core->getR(m)) + "[/m] -> @(h'[reg]" + rHex(core->getR(0)) + "[/reg]+h'[n]" + rHex(core->getR(n))
-                                    + "[/n])=@h'[res]" + rHex(core->getR(n) + core->getR(0)) + "[/res]";
                         rtn.hint = "Move Data";
                         break;
                     case b0101: //0000nnnnmmmm0101 : MOV.W Rm,@(R0,Rn)
@@ -241,9 +195,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.w [m]r" + rDec(m) + "[/m],@([reg]r0[/reg],[n]r" + rDec(n) + "[/n])";
-                        if(core != NULL)
-                            rtn.result = "h'[m]" + rHex(0xffff & core->getR(m)) + "[/m] -> @(h'[reg]" + rHex(core->getR(0)) + "[/reg]+h'[n]" + rHex(core->getR(n))
-                                    + "[/n])=@h'[res]" + rHex(core->getR(n) + core->getR(0)) + "[/res]";
                         rtn.hint = "Move Data";
                         break;
                     case b0110: //0000nnnnmmmm0110 : MOV.L Rm,@(R0,Rn)
@@ -252,9 +203,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.l [m]r" + rDec(m) + "[/m],@([reg]r0[/reg],[n]r" + rDec(n) + "[/n])";
-                        if(core != NULL)
-                            rtn.result = "h'[m]" + rHex(core->getR(m)) + "[/m] -> @(h'[reg]" + rHex(core->getR(0)) + "[/reg]+h'[n]" + rHex(core->getR(n))
-                                    + "[/n])=@h'[res]" + rHex(core->getR(n) + core->getR(0)) + "[/res]";
                         rtn.hint = "Move Data";
                         break;
                     case b0111: //0000nnnnmmmm0111 : MUL.L Rm,Rn
@@ -263,8 +211,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mul.l [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL)
-                            rtn.result = "h'[m]" + rHex(core->getR(m)) + "[/m]*h'[n]" + rHex(core->getR(n)) + "[/n]=h'[res]" + rHex(core->getR(m)*core->getR(n)) + "[/res] -> [reg]macl[/reg]";
                         rtn.hint = "Multiply Long : macl=r" + rDec(n) + "*r" + rDec(m);
                         break;
                     case b1000:
@@ -273,17 +219,16 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                             switch(nibble[2]) {
                                 case b0000: //0000000000001000 : CLRT
                                     rtn.instruction = "clrt";
-                                    rtn.result = "0 -> [reg]t[/reg]";
+                                    rtn.result = "0 -> t";
                                     rtn.hint = "Clear T Bit";
                                     break;
                                 case b0001: //0000000000011000 : SETT
                                     rtn.instruction = "sett";
-                                    rtn.result = "1 -> [reg]t[/reg]";
+                                    rtn.result = "1 -> t";
                                     rtn.hint = "Set T Bit";
                                     break;
                                 case b0010: //0000000000101000 : CLRMAC
                                     rtn.instruction = "clrmac";
-                                    rtn.result = "0 -> [reg]mach[/reg] ; 0 -> [reg]macl[/reg]";
                                     rtn.hint = "Clear MAC Register";
                                     break;
                                 case b0011: //0000000000111000 : LDTLB
@@ -292,12 +237,12 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                     break;
                                 case b0100: //0000000001001000 : CLRS
                                     rtn.instruction = "clrs";
-                                    rtn.result = "0 -> [reg]s[/reg]";
+                                    rtn.result = "0 -> s";
                                     rtn.hint = "Clear S Bit";
                                     break;
                                 case b0101: //0000000001011000 : SETS
                                     rtn.instruction = "sets";
-                                    rtn.result = "1 -> [reg]s[/reg]";
+                                    rtn.result = "1 -> s";
                                     rtn.hint = "Set S Bit";
                                     break;}
                         } break;
@@ -314,7 +259,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 if(nibble[1] == 0)
                                 {
                                     rtn.instruction = "div0u";
-                                    rtn.result = "0 -> [reg]M[/reg] ; 0 -> [reg]Q[/reg] ; 0 -> [reg]T[/reg]";
                                     rtn.hint = "Divide Step 0 as Unsigned";
                                 }
                                 break;
@@ -322,8 +266,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "movt [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "[reg]" + rDec(core->getT()) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Move T Bit";
                                 break;
                         } break;
@@ -333,27 +275,18 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "sts [reg]mach[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    uint32_t t = core->getMach();
-                                    if ((t&0x00000200)==0) t&=0x000003FF; else t|=0xFFFFFC00;
-                                    rtn.result = "h'[reg]" + rHex(t) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
-                                }
                                 rtn.hint = "Store System Register";
                                 break;
                             case b0001: //0000nnnn00011010 : STS MACL,Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "sts [reg]macl[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getMacl()) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store System Register";
                                 break;
                             case b0010: //0000nnnn00101010 : STS PR,Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "sts [reg]pr[/reg],[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getPr()) + "[/reg] -> [n]r" + rDec(n) + "[/n]";
                                 rtn.hint = "Store System Register";
                                 break;
                         } break;
@@ -361,9 +294,7 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         switch(nibble[2]) {
                             case b0000: //0000000000001011 : RTS
                                 rtn.instruction = "rts";
-                                if(core != NULL)
-                                    rtn.result = "h'[reg]" + rHex(core->getPr()+4) + "[/reg]";
-                                rtn.hint = "Return from Subroutine";
+                                rtn.hint = "Return from Subroutine | Delayed";
                                 break;
                             case b0001: //0000000000011011 : SLEEP
                                 if(nibble[1] == 0)
@@ -376,7 +307,7 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 if(nibble[1] == 0)
                                 {
                                     rtn.instruction = "rte";
-                                    rtn.hint = "Return from Exception | Delay slot";
+                                    rtn.hint = "Return from Exception | Delayed";
                                 }
                                 break;
                         } break;
@@ -386,19 +317,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.b @([reg]r0[/reg],[m]r" + rDec(m) + "[/m]),[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            try{
-                                uint32_t tmp = core->Read_Byte(core->getR(m)+core->getR(0));
-                                if ((tmp&0x80)==0) tmp&=0x000000FF; else tmp|=0xFFFFFF00;
-                                rtn.result = "@(h'[reg]" + rHex(core->getR(0)) + "[/reg]+h'[m]" + rHex(core->getR(m)) + "[/m])=@(h'[res]"
-                                        + rHex(core->getR(m)+core->getR(0)) + "[/res])=h'[res]" + rHex(tmp) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                            }
-                            catch(std::exception & e){
-                                rtn.result = "@(h'[reg]" + rHex(core->getR(0)) + "[/reg]+h'[m]" + rHex(core->getR(m)) + "[/m])=@(h'[res]"
-                                        + rHex(core->getR(m)+core->getR(0)) + "[/res]) -> [n]r" + rDec(n) + "[/n]";
-                            }
-
-                        }
                         rtn.hint = "Move Data";
                         break;
                     case b1101: //0000nnnnmmmm1101 : MOV.W @(R0,Rm),Rn
@@ -407,17 +325,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.w @([reg]r0[/reg],[m]r" + rDec(m) + "[/m]),[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            try{
-                                uint32_t tmp = core->Read_Word(core->getR(m)+core->getR(0));
-                                if ((tmp&0x8000)==0) tmp&=0x0000FFFF; else tmp|=0xFFFF0000;
-                                rtn.result = "@(h'[reg]" + rHex(core->getR(0)) + "[/reg]+h'[m]" + rHex(core->getR(m)) + "[/m])=@(h'[res]"
-                                        + rHex(core->getR(m)+core->getR(0)) + "[/res])=h'[res]" + rHex(tmp) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                            }catch(std::exception & e){
-                                rtn.result = "@(h'[reg]" + rHex(core->getR(0)) + "[/reg]+h'[m]" + rHex(core->getR(m)) + "[/m])=@(h'[res]"
-                                        + rHex(core->getR(m)+core->getR(0)) + "[/res]) -> [n]r" + rDec(n) + "[/n]";
-                            }
-                        }
                         rtn.hint = "Move Data";
                         break;
                     case b1110: //0000nnnnmmmm1110 : MOV.L @(R0,Rm),Rn
@@ -426,16 +333,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.l @([reg]r0[/reg],[m]r" + rDec(m) + "[/m]),[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            try{
-                                uint32_t tmp = core->Read_Long(core->getR(m)+core->getR(0));
-                                rtn.result = "@(h'[reg]" + rHex(core->getR(0)) + "[/reg]+h'[m]" + rHex(core->getR(m)) + "[/m])=@(h'[res]"
-                                        + rHex(core->getR(m)+core->getR(0)) + "[/res])=h'[res]" + rHex(tmp) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                            }catch(std::exception & e){
-                                rtn.result = "@(h'[reg]" + rHex(core->getR(0)) + "[/reg]+h'[m]" + rHex(core->getR(m)) + "[/m])=@(h'[res]"
-                                        + rHex(core->getR(m)+core->getR(0)) + "[/res]) -> [n]r" + rDec(n) + "[/n]";
-                            }
-                        }
                         rtn.hint = "Move Data";
                         break;
                     case b1111: //0000nnnnmmmm1111 : MAC.L @Rm+,@Rn+
@@ -455,10 +352,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                 nibbleClass[3] = "d";
                 d = 0xf & (long)nibble[3];
                 rtn.instruction = "mov.l [m]r" + rDec(m) + "[/m],@(h'[d]" + rHex(d*4) + "[/d],[n]r" + rDec(n) + "[/n])";
-                if(core != NULL){
-                    rtn.result = "h'[m]" + rHex(core->getR(m)) + "[/m] -> @(h'[d]" + rHex(d) + "[/d]*4+h'[n]" + rHex(core->getR(n)) + "[/n])=@(h'[res]"
-                            + rHex(core->getR(n)+d*4) + "[/res])";
-                }
                 rtn.hint = "Move Structure Data";
                 break;
             case b0010:
@@ -469,9 +362,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.b [m]r" + rDec(m) + "[/m],@[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "h'[m]" + rHex(0xff & core->getR(m)) + "[/m] -> @[n]h'" + rHex(core->getR(n)) + "[/n]";
-                        }
                         rtn.hint = "Move Data";
                         break;
                     case b0001: //0010nnnnmmmm0001 : MOV.W Rm,@Rn
@@ -480,9 +370,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.w [m]r" + rDec(m) + "[/m],@[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "h'[m]" + rHex(0xffff & core->getR(m)) + "[/m] -> @[n]h'" + rHex(core->getR(n)) + "[/n]";
-                        }
                         rtn.hint = "Move Data";
                         break;
                     case b0010: //0010nnnnmmmm0010 : MOV.L Rm,@Rn
@@ -491,9 +378,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.l [m]r" + rDec(m) + "[/m],@[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "h'[m]" + rHex(core->getR(m)) + "[/m] -> @[n]h'" + rHex(core->getR(n)) + "[/n]";
-                        }
                         rtn.hint = "Move Data";
                         break;
                     case b0100: //0010nnnnmmmm0100 : MOV.B Rm,@-Rn
@@ -502,9 +386,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.b [m]r" + rDec(m) + "[/m],@-[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "h'[m]" + rHex(0xff & core->getR(m)) + "[/m] -> @([n]r" + rDec(n) + "[/n]-1)=@[n]h'" + rHex(core->getR(n)-1) + "[/n]";
-                        }
                         rtn.hint = "Move Data";
                         break;
                     case b0101: //0010nnnnmmmm0101 : MOV.W Rm,@-Rn
@@ -513,9 +394,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.w [m]r" + rDec(m) + "[/m],@-[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "h'[m]" + rHex(0xffff & core->getR(m)) + "[/m] -> @([n]r" + rDec(n) + "[/n]-2)=@[n]h'" + rHex(core->getR(n)-2) + "[/n]";
-                        }
                         rtn.hint = "Move Data";
                         break;
                     case b0110: //0010nnnnmmmm0110 : MOV.L Rm,@-Rn
@@ -524,9 +402,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mov.l [m]r" + rDec(m) + "[/m],@-[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "h'[m]" + rHex(core->getR(m)) + "[/m] -> @([n]r" + rDec(n) + "[/n]-4)=@[n]h'" + rHex(core->getR(n)-4) + "[/n]";
-                        }
                         rtn.hint = "Move Data";
                         break;
                     case b0111: //0010nnnnmmmm0111 : DIV0S Rm,Rn
@@ -543,11 +418,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "tst [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            QString T = "0";
-                            if((core->getR(m)&core->getR(n))==0) T="1";
-                            rtn.result = "!(h'[m]" + rHex(core->getR(m)) + "[/m]&h'[n]" + rHex(core->getR(n)) + "[/n])=![res]" + rHex(core->getR(m)&core->getR(n)) + "[/res]=[res]" + T + "[/res] -> [reg]T[/reg]";
-                        }
                         rtn.hint = "Test Logical";
                         break;
                     case b1001: //0010nnnnmmmm1001 : AND Rm,Rn
@@ -556,9 +426,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "and [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "(h'[m]" + rHex(core->getR(m)) + "[/m]&h'[n]" + rHex(core->getR(n)) + "[/n])=[res]" + rHex(core->getR(m)&core->getR(n)) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                        }
                         rtn.hint = "AND Logical";
                         break;
                     case b1010: //0010nnnnmmmm1010 : XOR Rm,Rn
@@ -567,9 +434,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "xor [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "(h'[m]" + rHex(core->getR(m)) + "[/m]^h'[n]" + rHex(core->getR(n)) + "[/n])=[res]" + rHex(core->getR(m)^core->getR(n)) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                        }
                         rtn.hint = "Exclusive OR Logical";
                         break;
                     case b1011: //0010nnnnmmmm1011 : OR Rm,Rn
@@ -578,9 +442,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "or [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "(h'[m]" + rHex(core->getR(m)) + "[/m]|h'[n]" + rHex(core->getR(n)) + "[/n])=[res]" + rHex(core->getR(m)|core->getR(n)) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                        }
                         rtn.hint = "OR Logical";
                         break;
                   case b1100: //0010nnnnmmmm1100 : CMP/STR Rm,Rn
@@ -589,19 +450,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "cmp/str [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            unsigned long temp;
-                            long HH,HL,LH,LL;
-                            QString T = "0";
-                            temp=core->getR(n)^core->getR(m);
-                            HH=(temp&0xFF000000)>>12;
-                            HL=(temp&0x00FF0000)>>8;
-                            LH=(temp&0x0000FF00)>>4;
-                            LL=temp&0x000000FF;
-                            HH=HH&&HL&&LH&&LL;
-                            if (HH==0) T="1";
-                            rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg]";
-                        }
                         rtn.hint = "Compare Conditionally | When a byte in R" + rDec(n) + " equals a byte in R" + rDec(m) + ", 1 -> T";
                         break;
                     case b1101: //0010nnnnmmmm1101 : XTRCT Rm,Rn
@@ -610,9 +458,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "xtrct [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "h'[res]" + rHex(((core->getR(n)>>16)&0x0000FFFF)|((core->getR(m)<<16)&0xFFFF0000)) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                        }
                         rtn.hint = "Extract";
                         break;
                     case b1110: //0010nnnnmmmm1110 : MULU Rm,Rn
@@ -621,9 +466,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "mulu [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "h'[res]" + rHex(((unsigned long)(unsigned short)core->getR(n)*(unsigned long)(unsigned short)core->getR(m))) + "[/res] -> [reg]macl[/reg]";
-                        }
                         rtn.hint = "Multiply as Unsigned Word";
                         break;
                     case b1111: //0010nnnnmmmm1111 : MULS Rm,Rn
@@ -632,9 +474,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "muls [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "h'[res]" + rHex(((long)(short)core->getR(n)*(long)(short)core->getR(m))) + "[/res] -> [reg]macl[/reg]";
-                        }
                         rtn.hint = "Multiply as Signed Word";
                         break;
                 } break;
@@ -646,11 +485,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "cmp/eq [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            QString T = "0";
-                            if (core->getR(n)==core->getR(m)) T="1";
-                            rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg]";
-                        }
                         rtn.hint = "Compare Conditionally | Equality";
                         break;
                     case b0010: //0011nnnnmmmm0010 : CMP_HS Rm,Rn
@@ -659,11 +493,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "cmp/hs [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            QString T = "0";
-                            if((unsigned long)core->getR(n)>=(unsigned long)core->getR(m)) T="1";
-                            rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg]";
-                        }
                         rtn.hint = "Compare Conditionally | Unsigned Greater or Equal";
                         break;
                     case b0011: //0011nnnnmmmm0011 : CMP_GE Rm,Rn
@@ -672,11 +501,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "cmp/ge [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            QString T = "0";
-                            if((long)core->getR(n)>=(long)core->getR(m)) T="1";
-                            rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg]";
-                        }
                         rtn.hint = "Compare Conditionally | Signed Greater or Equal";
                         break;
                     case b0100: //0011nnnnmmmm0100 : DIV1 Rm,Rn
@@ -687,17 +511,20 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         rtn.instruction = "div1 [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
                         rtn.hint = "Divide Step 1 (r" + rDec(m) + "/r" + rDec(n) + ")";
                         break;
+                    case b0101: //0011nnnnmmmm0101 : DMULU.L Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "dmulu.l [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Double-Length Multiply as Unsigned";
+                        break;
                     case b0110: //0011nnnnmmmm0110 : CMP_HI Rm,Rn
                         nibbleClass[1] = "n";
                         n = nibble[1];
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "cmp/hi [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            QString T = "0";
-                            if((unsigned long)core->getR(n)>(unsigned long)core->getR(m)) T="1";
-                            rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg]";
-                        }
                         rtn.hint = "Compare Conditionally | Unsigned Greater";
                         break;
                     case b0111: //0011nnnnmmmm0111 : CMP_GT Rm,Rn
@@ -706,11 +533,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "cmp/gt [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            QString T = "0";
-                            if((long)core->getR(n)>(long)core->getR(m)) T="1";
-                            rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg]";
-                        }
                         rtn.hint = "Compare Conditionally | Signed Greater";
                         break;
                     case b1000: //0011nnnnmmmm1000 : SUB Rm,Rn
@@ -719,9 +541,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "sub [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "h'[res]" + rHex(core->getR(n)-core->getR(m)) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                        }
                         rtn.hint = "Subtract Binary (r" + rDec(n) + " - r" + rDec(m) + ")";
                         break;
                     case b1010: //0011nnnnmmmm1010 : SUBC Rm,Rn
@@ -730,15 +549,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "subc [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            QString T = QString::number((int)core->getT());
-                            unsigned long tmp0,tmp1;
-                            tmp1=core->getR(n) - core->getR(m);
-                            tmp0=core->getR(n);
-                            if (tmp0<tmp1) T="1";
-                            if (tmp1<(tmp1 - core->getT())) T="1";
-                            rtn.result = "h'[res]" + rHex(tmp1 - core->getT()) + "[/res] -> [n]r" + rDec(n) + "[/n] ; [res]" + T + "[/res] -> [reg]T[/reg]";
-                        }
                         rtn.hint = "Subtract with Carry (r" + rDec(n) + " - r" + rDec(m) + ") | Used for subtraction of data that has more than 32 bits.";
                         break;
                     case b1011: //0011nnnnmmmm1011 : SUBV Rm,Rn
@@ -747,24 +557,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "subv [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            QString T = QString::number((int)core->getT());
-                            long dest,src,ans;
-                            if ((long)core->getR(n)>=0) dest=0;
-                            else dest=1;
-                            if ((long)core->getR(m)>=0) src=0;
-                            else src=1;
-                            src+=dest;
-                            if ((long)(core->getR(n) - core->getR(m))>=0) ans=0;
-                            else ans=1;
-                            ans+=dest;
-                            if (src==1) {
-                            if (ans==1) T="1";
-                            else T="0";
-                            }
-                            else T="0";
-                            rtn.result = "h'[res]" + rHex(core->getR(n) - core->getR(m)) + "[/res] -> [n]r" + rDec(n) + "[/n] ; [res]" + T + "[/res] -> [reg]T[/reg]";
-                        }
                         rtn.hint = "Subtract with V Flag Underflow Check (r" + rDec(n) + " - r" + rDec(m) + ")";
                         break;
                     case b1100: //0011nnnnmmmm1100 : ADD Rm,Rn
@@ -773,9 +565,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "add [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            rtn.result = "h'[res]" + rHex(core->getR(n)+core->getR(m)) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                        }
                         rtn.hint = "Add Binary";
                         break;
                     case b1101: //0011nnnnmmmm1101 : DMULS.L Rm,Rn
@@ -792,15 +581,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "addc [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            QString T = QString::number((int)core->getT());
-                            unsigned long tmp0,tmp1;
-                            tmp1=core->getR(n) + core->getR(m);
-                            tmp0=core->getR(n);
-                            if (tmp0>tmp1) T="1";
-                            if (tmp1>(tmp1 - core->getT())) T="1";
-                            rtn.result = "h'[res]" + rHex(tmp1 + core->getT()) + "[/res] -> [n]r" + rDec(n) + "[/n] ; [res]" + T + "[/res] -> [reg]T[/reg]";
-                        }
                         rtn.hint = "Add with Carry | Used for addition of data that has more than 32 bits.";
                         break;
                     case b1111: //0011nnnnmmmm1111 : ADDV Rm,Rn
@@ -809,24 +589,6 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                         nibbleClass[2] = "m";
                         m = nibble[2];
                         rtn.instruction = "addv [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
-                        if(core != NULL){
-                            QString T = QString::number((int)core->getT());
-                            long dest,src,ans;
-                            if ((long)core->getR(n)>=0) dest=0;
-                            else dest=1;
-                            if ((long)core->getR(m)>=0) src=0;
-                            else src=1;
-                            src+=dest;
-                            if ((long)(core->getR(n) + core->getR(m))>=0) ans=0;
-                            else ans=1;
-                            ans+=dest;
-                            if (src==0 || src==2) {
-                            if (ans==1) T="1";
-                            else T="0";
-                            }
-                            else T="0";
-                            rtn.result = "h'[res]" + rHex(core->getR(n) - core->getR(m)) + "[/res] -> [n]r" + rDec(n) + "[/n] ; [res]" + T + "[/res] -> [reg]T[/reg]";
-                        }
                         rtn.hint = "Add with V Flag Overflow Check";
                         break;
                 } break;
@@ -838,33 +600,18 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "shll [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    QString T = "1";
-                                    if ((core->getR(n)&0x80000000)==0) T="0";
-                                    rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg] ; h'[res]" + rHex(core->getR(n)<<1) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                                }
                                 rtn.hint = "Shift Logical Left | Put the shifted bit in T";
                                 break;
                             case b0001: //0100nnnn00010000 : DT Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "dt [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    QString T = "0";
-                                    if ((core->getR(n)-1)==0) T="1";
-                                    rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg] ; h'[res]" + rHex(core->getR(n)-1) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                                }
                                 rtn.hint = "Decrement and Test";
                                 break;
                             case b0010: //0100nnnn00100000 : SHAL Rn(Same as SHLL)
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "shal [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    QString T = "1";
-                                    if ((core->getR(n)&0x80000000)==0) T="0";
-                                    rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg] ; h'[res]" + rHex(core->getR(n)<<1) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                                }
                                 rtn.hint = "Shift Arithmetic Left | Put the shifted bit in T";
                                 break;
                         } break;
@@ -874,38 +621,18 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "shlr [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    QString T = "1";
-                                    if ((core->getR(n)&0x00000001)==0) T="0";
-                                    rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg] ; h'[res]" + rHex((core->getR(n)>>1)&0x7FFFFFFF) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                                }
                                 rtn.hint = "Shift Logical Right | Put the shifted bit in T";
                                 break;
                             case b0001: //0100nnnn00010001 : CMP_PZ Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "cmp/pz [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    QString T = "0";
-                                    if ((long)core->getR(n)>=0) T="1";
-                                    rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg]";
-                                }
                                 rtn.hint = "Compare Conditionally | Greater than or equal to 0";
                                 break;
                             case b0010: //0100nnnn00100001 : SHAR Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "shar [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    QString T = "1";
-                                    if ((core->getR(n)&0x00000001)==0) T="0";
-                                    long temp, temprn;
-                                    if ((core->getR(n)&0x80000000)==0) temp=0; else temp=1;
-                                    temprn = core->getR(n) >> 1;
-                                    if (temp==1) temprn|=0x80000000;
-                                    else temprn&=0x7FFFFFFF;
-                                    rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg] ; h'[res]" + rHex(temprn) + "[/res] -> [n]r" + rDec(n) + "[/n]";
-                                }
                                 rtn.hint = "Shift Arithmetic Right | Put the shifted bit in T";
                                 break;
                         } break;
@@ -915,30 +642,18 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "sts.l [reg]mach[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    ulong temp;
-                                    if ((core->getMach()&0x00000200)==0) temp = core->getMach()&0x000003FF;
-                                    else  temp = core->getMach()|0xFFFFFC00;
-                                    rtn.result = "h'[reg]" + rHex(temp) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "System Control Instruction";
                                 break;
                             case b0001: //0100nnnn00010010 : STS.L MACL,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "sts.l [reg]macl[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getMacl()) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "System Control Instruction";
                                 break;
                             case b0010: //0100nnnn00100010 : STS.L PR,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "sts.l [reg]pr[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getPr()) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "System Control Instruction";
                                 break;
                          }break;
@@ -948,117 +663,78 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]sr[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getSr()) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b0001: //0100nnnn00010011 : STC.L GBR,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]gbr[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getGbr()) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b0010: //0100nnnn00100011 : STC.L VBR,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]vbr[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getVbr()) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b0011: //0100nnnn00110011 : STC.L SSR,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]ssr[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getSsr()) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b0100: //0100nnnn01000011 : STC.L SPC,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]spc[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getSpc()) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1000: //0100nnnn10000011 : STC.L R0_BANK,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]r0_bank[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(0)) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1001: //0100nnnn10010011 : STC.L R1_BANK,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]r1_bank[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(1)) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1010: //0100nnnn10100011 : STC.L R2_BANK,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]r2_bank[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(2)) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1011: //0100nnnn10110011 : STC.L R3_BANK,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]r3_bank[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(3)) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1100: //0100nnnn11000011 : STC.L R4_BANK,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]r4_bank[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(4)) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1101: //0100nnnn11010011 : STC.L R5_BANK,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]r5_bank[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(5)) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1110: //0100nnnn11100011 : STC.L R6_BANK,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]r6_bank[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(6)) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                             case b1111: //0100nnnn11110011 : STC.L R7_BANK,@-Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "stc.l [reg]r7_bank[/reg],@-[n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    rtn.result = "h'[reg]" + rHex(core->getRn_bank(7)) + "[/reg] -> @([n]r" + rDec(n) + "[/n]-4)=@h'[n]" + rHex(core->getR(n)-4) + "[/n]";
-                                }
                                 rtn.hint = "Store Control Register";
                                 break;
                         } break;
@@ -1068,30 +744,12 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "rotl [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    QString T = "1";
-                                    uint32_t tmp = core->getR(n)<<1;
-                                    if ((core->getR(n)&0x80000000)==0) T="0";
-                                    if (T=="1") tmp|=0x00000001;
-                                    else tmp&=0xFFFFFFFE;
-                                    rtn.result = "h'[res]" + rHex(tmp) + "[/res] -> [n]r" + rDec(n) + "[/n] ; [res]" + T + "[/res] -> [reg]T[/reg]";
-                                }
                                 rtn.hint = "Rotate Left";
                                 break;
                             case b0010: //0100nnnn00100100 : ROTCL Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "rotcl [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    QString T = "0";
-                                    if ((core->getR(n)&0x80000000)==0) temp=0;
-                                    else temp=1;
-                                    uint32_t tmp = core->getR(n)<<1;
-                                    if (T=="1") tmp|=0x00000001;
-                                    else tmp&=0xFFFFFFFE;
-                                    if (temp==1) T="1";
-                                    rtn.result = "h'[res]" + rHex(tmp) + "[/res] -> [n]r" + rDec(n) + "[/n] ; [res]" + T + "[/res] -> [reg]T[/reg]";
-                                }
                                 rtn.hint = "Rotate with Carry Left";
                                 break;
                         } break;
@@ -1101,40 +759,18 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "rotr [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    QString T = "1";
-                                    uint32_t tmp = core->getR(n)>>1;
-                                    if (T=="1") tmp|=0x80000000;
-                                    else tmp&=0x7FFFFFFF;
-                                    rtn.result = "h'[res]" + rHex(tmp) + "[/res] -> [n]r" + rDec(n) + "[/n] ; [res]" + T + "[/res] -> [reg]T[/reg]";
-                                }
                                 rtn.hint = "Rotate Right";
                                 break;
                             case b0001: //0100nnnn00010101 : CMP_PL Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "cmp/pl [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    QString T = "0";
-                                    if ((long)core->getR(n)>0) T="1";
-                                    rtn.result = "[res]" + T + "[/res] -> [reg]T[/reg]";
-                                }
                                 rtn.hint = "Compare Conditionally | Greater than 0";
                                 break;
                             case b0010: //0100nnnn00100101 : ROTCR Rn
                                 nibbleClass[1] = "n";
                                 n = nibble[1];
                                 rtn.instruction = "rotcr [n]r" + rDec(n) + "[/n]";
-                                if(core != NULL){
-                                    QString T = "0";
-                                    if ((core->getR(n)&0x00000001)==0) temp=0;
-                                    else temp=1;
-                                    uint32_t tmp = core->getR(n)>>1;
-                                    if (T=="1") tmp|=0x80000000;
-                                    else tmp&=0x7FFFFFFF;
-                                    if (temp==1) T="1";
-                                    rtn.result = "h'[res]" + rHex(tmp) + "[/res] -> [n]r" + rDec(n) + "[/n] ; [res]" + T + "[/res] -> [reg]T[/reg]";
-                                }
                                 rtn.hint = "Rotate with Carry Right";
                                 break;
                         } break;
@@ -1144,286 +780,698 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                                 nibbleClass[1] = "m";
                                 m = nibble[1];
                                 rtn.instruction = "lds.l @[m]r" + rDec(m) + "[/m]+,[reg]mach[/reg]";
-                                if(core != NULL)
-                                    uint32_t tmp = core->Read_Long(core->getR(m));
-                                    if ((tmp&0x00000200)==0) tmp&=0x000003FF;
-                                    else tmp|=0xFFFFFC00;
-                                    rtn.result = "h'[m]" + rHex(tmp) + "[/m] -> [reg]mach[/reg]";
-                                rtn.hint = "Store Control Register";
+                                rtn.hint = "Load to System Register";
                                 break;
-
+                            case b0001: //0100mmmm00010110 : LDS.L @Rm+,MACL
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                MACH=Read_Long(R[m]);
-                                if ((MACH&0x00000200)==0) MACH&=0x000003FF;
-                                else MACH|=0xFFFFFC00;
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
-                                break;
-                            case b0001: //0100mmmm00010110 : DS.L @Rm+,MACL
-                                m = nibble[1];
-                                MACL=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "lds.l @[m]r" + rDec(m) + "[/m]+,[reg]macl[/reg]";
+                                rtn.hint = "Load to System Register";
                                 break;
                             case b0010: //0100mmmm00100110 : LDS.L @Rm+,PR
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                PR=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "lds.l @[m]r" + rDec(m) + "[/m]+,[reg]pr[/reg]";
+                                rtn.hint = "Load to System Register";
                                 break;
                         } break;
                     case b0111:
                         switch(nibble[2]){
                             case b0000: //0100mmmm00000111 : LDC.L @Rm+,SR
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                SR=Read_Long(R[m])&0x0FFF0FFF;
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]sr[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b0001: //0100mmmm00010111 : LDC.L @Rm+,GBR
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                GBR=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]gbr[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b0010: //0100mmmm00100111 : LDC.L @Rm+,VBR
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                VBR=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]vbr[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b0011: //0100mmmm00110111 : LDC.L @Rm+,SSR
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                SSR=Read_Long(R[m])&0x700003F3;
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]ssr[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b0100: //0100mmmm01000111 : LDC.L @Rm+,SPC
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                SPC=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]spc[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b1000: //0100mmmm10000111 : LDC.L @Rm+,R0_BANK
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                R0_BANK=Read_Long(R[m]);
-                                RS=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]r0_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b1001: //0100mmmm10010111 : LDC.L @Rm+,R1_BANK
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                R1_BANK=Read_Long(R[m]);
-                                RS=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]r1_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b1010: //0100mmmm10100111 : LDC.L @Rm+,R2_BANK
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                R2_BANK=Read_Long(R[m]);
-                                RS=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]r2_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b1011: //0100mmmm10110111 : LDC.L @Rm+,R3_BANK
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                R3_BANK=Read_Long(R[m]);
-                                RS=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]r3_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b1100: //0100mmmm11000111 : LDC.L @Rm+,R4_BANK
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                R4_BANK=Read_Long(R[m]);
-                                RS=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]r4_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b1101: //0100mmmm11010111 : LDC.L @Rm+,R5_BANK
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                R5_BANK=Read_Long(R[m]);
-                                RS=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]r5_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b1110: //0100mmmm11100111 : LDC.L @Rm+,R6_BANK
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                R6_BANK=Read_Long(R[m]);
-                                RS=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]r6_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
                             case b1111: //0100mmmm11110111 : LDC.L @Rm+,R7_BANK
+                                nibbleClass[1] = "m";
                                 m = nibble[1];
-                                R7_BANK=Read_Long(R[m]);
-                                RS=Read_Long(R[m]);
-                                R[m]+=4;
-                                PC+=2;
-                                done = true;
+                                rtn.instruction = "ldc.l @[m]r" + rDec(m) + "[/m]+,[reg]r7_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
                                 break;
-                        } break;
-
-
-
-
-
-
-
-
-                    case b0110:
-                        switch(nibble[2]) {
-                            case b0000: rtn.instruction = "lds.l  @r" + convertInt(nibble[1]) + "+, mach";	break; //0100mmmm00000110
-                            case b0001: rtn.instruction = "lds.l  @r" + convertInt(nibble[1]) + "+, macl";	break; //0100mmmm00010110
-                            case b0010: rtn.instruction = "lds.l  @r" + convertInt(nibble[1]) + "+, pr";	break; //0100mmmm00100110
-                        } break;
-                    case b0111:
-                        switch(nibble[2]){
-                            case b0000: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, sr"; break; //0100mmmm00000111
-                            case b0001: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, gbr"; break; //0100mmmm00010111
-                            case b0010: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, vbr"; break; //0100mmmm00100111
-                            case b0011: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, ssr"; break; //0100mmmm00110111
-                            case b0100: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, spc"; break; //0100mmmm01000111
-                            case b1000: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, r0_bank"; break; //0100mmmm10000111
-                            case b1001: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, r1_bank"; break; //0100mmmm10010111
-                            case b1010: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, r2_bank"; break; //0100mmmm10100111
-                            case b1011: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, r3_bank"; break; //0100mmmm10110111
-                            case b1100: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, r4_bank"; break; //0100mmmm11000111
-                            case b1101: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, r5_bank"; break; //0100mmmm11010111
-                            case b1110: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, r6_bank"; break; //0100mmmm11100111
-                            case b1111: rtn.instruction = "ldc.l  @r" + convertInt(nibble[1]) + "+, r7_bank"; break; //0100mmmm11110111
-                        } break;
-                    case b1010:
-                        switch(nibble[2]) {
-                            case b0000: rtn.instruction = "lds  r" + convertInt(nibble[1]) + ", mach"; break; //0100mmmm00001010
-                            case b0001: rtn.instruction = "lds  r" + convertInt(nibble[1]) + ", macl"; break; //0100mmmm00011010
-                            case b0010: rtn.instruction = "lds  r" + convertInt(nibble[1]) + ", pr"; break; //0100mmmm00101010
-                        } break;
-                    case b1110:
-                        switch(nibble[2]) {
-                            case b0000: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", sr"; break; //0100mmmm00001110
-                            case b0001: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", gbr"; break; //0100mmmm00011110
-                            case b0010: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", vbr"; break; //0100mmmm00101110
-                            case b0011: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", ssr"; break; //0100mmmm00111110
-                            case b0100: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", spc"; break; //0100mmmm01001110
-                            case b1000: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", r0_bank"; break; //0100mmmm10001110
-                            case b1001: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", r1_bank"; break; //0100mmmm10011110
-                            case b1010: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", r2_bank"; break; //0100mmmm10101110
-                            case b1011: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", r3_bank"; break; //0100mmmm10111110
-                            case b1100: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", r4_bank"; break; //0100mmmm11001110
-                            case b1101: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", r5_bank"; break; //0100mmmm11011110
-                            case b1110: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", r6_bank"; break; //0100mmmm11101110
-                            case b1111: rtn.instruction = "ldc  r" + convertInt(nibble[1]) + ", r7_bank"; break; //0100mmmm11111110
-                        } break;
-                    case b0100:
-                        switch(nibble[2]) {
-                            case b0000: rtn.instruction = "rotl  r" + convertInt(nibble[1]); break; //0100nnnn00000100
-                            case b0010: rtn.instruction = "rotcl  r" + convertInt(nibble[1]); break; //0100nnnn00100100
-                        } break;
-                    case b0101:
-                        switch(nibble[2]) {
-                            case b0000: rtn.instruction = "rotr  r" + convertInt(nibble[1]); break; //0100nnnn00000101
-                            case b0001: rtn.instruction = "cmp/pl  r" + convertInt(nibble[1]); break; //0100nnnn00010101
-                            case b0010: rtn.instruction = "rotcr  r" + convertInt(nibble[1]); break; //0100nnnn00100101
                         } break;
                     case b1000:
                         switch(nibble[2]) {
-                            case b0000: rtn.instruction = "shll2  r" + convertInt(nibble[1]); break; //0100nnnn00001000
-                            case b0001: rtn.instruction = "shll8  r" + convertInt(nibble[1]); break; //0100nnnn00011000
-                            case b0010: rtn.instruction = "shll16  r" + convertInt(nibble[1]); break; //0100nnnn00101000
+                            case b0000: //0100nnnn00001000 : SHLL2 Rn
+                                nibbleClass[1] = "n";
+                                n = nibble[1];
+                                rtn.instruction = "shll2 [n]r" + rDec(n) + "[/n]";
+                                rtn.hint = "Shift Logical Left 2 Bits";
+                                break;
+                            case b0001: //0100nnnn00011000 : SHLL8 Rn
+                                nibbleClass[1] = "n";
+                                n = nibble[1];
+                                rtn.instruction = "shll8 [n]r" + rDec(n) + "[/n]";
+                                rtn.hint = "Shift Logical Left 8 Bits";
+                                break;
+                            case b0010: //0100nnnn00101000 : SHLL16 Rn
+                                nibbleClass[1] = "n";
+                                n = nibble[1];
+                                rtn.instruction = "shll16 [n]r" + rDec(n) + "[/n]";
+                                rtn.hint = "Shift Logical Left 16 Bits";
+                                break;
                         } break;
                     case b1001:
                         switch(nibble[2]) {
-                            case b0000: rtn.instruction = "shlr2  r" + convertInt(nibble[1]); break; //0100nnnn00001001
-                            case b0001: rtn.instruction = "shlr8  r" + convertInt(nibble[1]); break; //0100nnnn00011001
-                            case b0010: rtn.instruction = "shlr16  r" + convertInt(nibble[1]); break; //0100nnnn00101001
+                            case b0000: //0100nnnn00001001 : SHLR2 Rn
+                                nibbleClass[1] = "n";
+                                n = nibble[1];
+                                rtn.instruction = "shlr2 [n]r" + rDec(n) + "[/n]";
+                                rtn.hint = "Shift Logical Right 2 Bits";
+                                break;
+                            case b0001: //0100nnnn00011001 : SHLR8 Rn
+                                nibbleClass[1] = "n";
+                                n = nibble[1];
+                                rtn.instruction = "shlr8 [n]r" + rDec(n) + "[/n]";
+                                rtn.hint = "Shift Logical Right 8 Bits";
+                                break;
+                            case b0010: //0100nnnn00101001 : SHLR16 Rn
+                                nibbleClass[1] = "n";
+                                n = nibble[1];
+                                rtn.instruction = "shlr16 [n]r" + rDec(n) + "[/n]";
+                                rtn.hint = "Shift Logical Right 16 Bits";
+                                break;
+                        } break;
+                    case b1010:
+                        switch(nibble[2]) {
+                            case b0000: //0100mmmm00001010 : LDS Rm,MACH
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "lds [m]r" + rDec(m) + "[/m],[reg]mach[/reg]";
+                                rtn.hint = "Load to System Register";
+                            case b0001: //0100mmmm00011010 : LDS Rm,MACL
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "lds [m]r" + rDec(m) + "[/m],[reg]macl[/reg]";
+                                rtn.hint = "Load to System Register";
+                            case b0010: //0100mmmm00101010 : LDS Rm,PR
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "lds [m]r" + rDec(m) + "[/m],[reg]pr[/reg]";
+                                rtn.hint = "Load to System Register";
                         } break;
                     case b1011:
                         switch(nibble[2]) {
-                            case b0000: rtn.instruction = "jsr  @r" + convertInt(nibble[1]); break; //0100nnnn00001011
-                            case b0001: rtn.instruction = "tas.b  @r" + convertInt(nibble[1]); break; //0100nnnn00011011
-                            case b0010: rtn.instruction = "jmp  @r" + convertInt(nibble[1]);	break;
+                            case b0000: //0100nnnn00001011 : JSR @Rn
+                                nibbleClass[1] = "n";
+                                n = nibble[1];
+                                rtn.instruction = "jsr @[n]r" + rDec(n) + "[/n]";
+                                rtn.hint = "Jump to Subroutine | Delayed";
+                                break;
+                            case b0001: //0100nnnn00011011 : TAS.B @Rn
+                                nibbleClass[1] = "n";
+                                n = nibble[1];
+                                rtn.instruction = "tas.b @[n]r" + rDec(n) + "[/n]";
+                                rtn.hint = "Test and Set";
+                                break;
+                            case b0010: //0100nnnn00101011 : JMP @Rn
+                                nibbleClass[1] = "n";
+                                n = nibble[1];
+                                rtn.instruction = "jmp @[n]r" + rDec(n) + "[/n]";
+                                rtn.hint = "Jump | Delayed";
+                                break;
                         } break;
-                    case b1100: rtn.instruction = "shad  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0100nnnnmmmm1100
-                    case b1101: rtn.instruction = "shld  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0100nnnnmmmm1101
-                    case b1111: rtn.instruction = "mac.w  @r" + convertInt(nibble[2]) + "+, @r" + convertInt(nibble[1]) + "+"; break; //0100nnnnmmmm1111
-                } break;
-            case b0101: rtn.instruction = "mov.l  @(h'" + convertHexNibbleU(nibble[3], 4) + ",r" + convertInt(nibble[2]) + "), r" + convertInt(nibble[1]); break; //0101nnnnmmmmdddd
+                    case b1100: //0100nnnnmmmm1100 : SHAD Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "shad [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Shift Arithmetic Dynamically | r" + rDec(m) + ">=0 : shift left else shift right";
+                        break;
+                    case b1101: //0100nnnnmmmm1101 : SHLD Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "shad [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Shift Logical Dynamically | r" + rDec(m) + ">=0 : shift left else shift right";
+                        break;
+                    case b1110:
+                        switch(nibble[2]) {
+                            case b0000: //0100mmmm00001110 : LDC Rm,SR
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]sr[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                            case b0001: //0100mmmm00011110 : LDC Rm,GBR
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]gbr[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                           case b0010: //0100mmmm00101110 : LDC Rm,VBR
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]vbr[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                            case b0011: //0100mmmm00111110 : LDC Rm,SSR
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]ssr[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                            case b0100: //0100mmmm01001110 : LDC Rm,SPC
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]spc[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                            case b1000: //0100mmmm10001110 : LDC Rm,R0_BANK
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]r0_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                            case b1001: //0100mmmm10011110 : LDC Rm,R1_BANK
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]r1_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                            case b1010: //0100mmmm10101110 : LDC Rm,R2_BANK
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]r2_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                            case b1011: //0100mmmm10111110 : LDC Rm,R3_BANK
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]r3_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                            case b1100: //0100mmmm11001110 : LDC Rm,R4_BANK
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]r4_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                            case b1101: //0100mmmm11011110 : LDC Rm,R5_BANK
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]r5_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                            case b1110: //0100mmmm11101110 : LDC Rm,R6_BANK
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]r6_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                            case b1111: //0100mmmm11111110 : LDC Rm,R7_BANK
+                                nibbleClass[1] = "m";
+                                m = nibble[1];
+                                rtn.instruction = "ldc [m]r" + rDec(m) + "[/m],[reg]r7_bank[/reg]";
+                                rtn.hint = "Load to Control Register";
+                                break;
+                        } break;
+                    case b1111: //0100nnnnmmmm1111 : MAC.W @Rm+,@Rn+
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "mac.w @[m]r" + rDec(m) + "[/m]+,@[n]r" + rDec(n) + "[/n]+";
+                        rtn.hint = "Multiply and Accumulate";
+                        break;
+               } break;
+            case b0101: //0101nnnnmmmmdddd : MOV.L @(disp,Rm),Rn
+                nibbleClass[1] = "n";
+                n = nibble[1];
+                nibbleClass[2] = "m";
+                m = nibble[2];
+                nibbleClass[3] = "d";
+                d = 0xf & (long)nibble[3];
+                rtn.instruction = "mov.l @(h'[d]" + rHex(d<<2) + "[/d],[m]r" + rDec(m) + "[/m]),[n]r" + rDec(n) + "[/n]";
+                rtn.hint = "Move Structure Data";
+                break;
             case b0110:
                 switch(nibble[3]) {
-                    case b0000: rtn.instruction = "mov.b  @r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm0000
-                    case b0001: rtn.instruction = "mov.w  @r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm0001
-                    case b0010: rtn.instruction = "mov.l  @r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm0010
-
-                    case b0011: rtn.instruction = "mov  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm0011
-                    case b0100: rtn.instruction = "mov.b  @r" + convertInt(nibble[2]) + "+, r" + convertInt(nibble[1]); break; //0110nnnnmmmm0100
-                    case b0101: rtn.instruction = "mov.w  @r" + convertInt(nibble[2]) + "+, r" + convertInt(nibble[1]); break; //0110nnnnmmmm0101
-                    case b0110: rtn.instruction = "mov.l  @r" + convertInt(nibble[2]) + "+, r" + convertInt(nibble[1]); break; //0110nnnnmmmm0110
-                    case b0111: rtn.instruction = "not  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm0111
-                    case b1000: rtn.instruction = "swap.b  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm1000
-                    case b1001: rtn.instruction = "swap.w  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm1001
-                    case b1010: rtn.instruction = "negc  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm1010
-                    case b1011: rtn.instruction = "neg  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm1011
-                    case b1100: rtn.instruction = "extu.b  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm1100
-                    case b1101: rtn.instruction = "extu.w  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm1101
-                    case b1110: rtn.instruction = "exts.b  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm1110
-                    case b1111: rtn.instruction = "exts.w  r" + convertInt(nibble[2]) + ", r" + convertInt(nibble[1]); break; //0110nnnnmmmm1111
+                    case b0000: //0110nnnnmmmm0000 : MOV.B @Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "mov.b @[m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Move Data";
+                        break;
+                    case b0001: //0110nnnnmmmm0001 : MOV.W @Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "mov.w @[m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Move Data";
+                        break;
+                    case b0010: //0110nnnnmmmm0010 : MOV.L @Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "mov.l @[m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Move Data";
+                        break;
+                     case b0011: //0110nnnnmmmm0011 : MOV Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "mov [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Move Data";
+                        break;
+                    case b0100: //0110nnnnmmmm0100 : MOV.B @Rm+,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "mov.b @[m]r" + rDec(m) + "[/m]+,[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Move Data";
+                        break;
+                    case b0101: //0110nnnnmmmm0101 : MOV.W @Rm+,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "mov.w @[m]r" + rDec(m) + "[/m]+,[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Move Data";
+                        break;
+                    case b0110: //0110nnnnmmmm0110 : MOV.L @Rm+,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "mov.l @[m]r" + rDec(m) + "[/m]+,[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Move Data";
+                        break;
+                    case b0111: //0110nnnnmmmm0111 : NOT Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "not [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Logical Complement";
+                        break;
+                    case b1000: //0110nnnnmmmm1000 : SWAP.B Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "swap.b [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Swap Register Halves";
+                        break;
+                    case b1001: //0110nnnnmmmm1001 : SWAP.W Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "swap.w [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Swap Register Halves";
+                        break;
+                    case b1010: //0110nnnnmmmm1010 : NEGC Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "negc [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Negate with Carry";
+                        break;
+                    case b1011: //0110nnnnmmmm1011 : NEG Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "neg [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Negate";
+                        break;
+                    case b1100: //0110nnnnmmmm1100 : EXTU.B Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "extu.b [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Extend as Unsigned";
+                        break;
+                    case b1101: //0110nnnnmmmm1101 : EXTU.W Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "extu.w [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Extend as Unsigned";
+                        break;
+                    case b1110: //0110nnnnmmmm1110 : EXTS.B Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "exts.b [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Extend as Signed";
+                        break;
+                    case b1111: //0110nnnnmmmm1111 : EXTS.W Rm,Rn
+                        nibbleClass[1] = "n";
+                        n = nibble[1];
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        rtn.instruction = "exts.w [m]r" + rDec(m) + "[/m],[n]r" + rDec(n) + "[/n]";
+                        rtn.hint = "Extend as Signed";
+                        break;
                 } break;
-            case b0111:
-                    rtn.instruction = "add  #h'" + convertInt(((nibble[2]<<4)+nibble[3]), 16) + ", r" + convertInt(nibble[1]);
-                break; //0111nnnniiiiiiii
+            case b0111: //0111nnnniiiiiiii : ADD #imm,Rn
+                nibbleClass[1] = "n";
+                n = nibble[1];
+                nibbleClass[2] = "i";
+                nibbleClass[3] = "i";
+                i = (nibble[2]<<4) + nibble[3];
+                if ((i&0x80)==0) i=(0x000000FF & (long)i);
+                else i=(0xFFFFFF00 | (long)i);
+                rtn.instruction = "add #h'[i]" + rHexNeg(i) + "[/i],[n]r" + rDec(n) + "[/n]";
+                rtn.hint = "Add Binary";
+                break;
             case b1000:
                 switch(nibble[1]) {
-                    case b0000: rtn.instruction = "mov.b  r0, @(h'" + convertHexNibbleU(nibble[3]) + ",r" + convertInt(nibble[2]) + ")"; break; //10000000nnnndddd
-                    case b0001: rtn.instruction = "mov.w  r0, @(h'" + convertHexNibbleU(nibble[3], 2) + ",r" + convertInt(nibble[2]) + ")"; break; //10000001nnnndddd
-                    case b0100: rtn.instruction = "mov.b  @(h'" + convertHexNibbleU(nibble[3]) + ",r" + convertInt(nibble[2]) + "), r0"; break; //10000100mmmmdddd
-                    case b0101: rtn.instruction = "mov.w  @(h'" + convertHexNibbleU(nibble[3], 2) + ",r" + convertInt(nibble[2]) + "), r0"; break; //10000101mmmmdddd
-                    case b1000: rtn.instruction = "cmp/eq  #h'" + convertHex8NibbleU(((nibble[2]<<4)+nibble[3])) + ", r0"; break; //10001000iiiiiiii
-                    case b1001: rtn.instruction = "bt  h'" + convertHex2NibbleS(((nibble[2]<<4)+nibble[3]),2); rtn.result = "@(h'" + convertHex8NibbleU(offset + 4 -(offset%2) + 2*convertInt2NibbleS((nibble[2]<<4)+nibble[3])) + ")" ; break; //10001001dddddddd
-                    case b1011: rtn.instruction = "bf  h'" + convertHex2NibbleS(((nibble[2]<<4)+nibble[3]),2); rtn.result = "@(h'" + convertHex8NibbleU(offset + 4 -(offset%2) + 2*convertInt2NibbleS((nibble[2]<<4)+nibble[3])) + ")" ; break; //10001011dddddddd
-                    case b1101: rtn.instruction = "bt/s  h'" + convertHex2NibbleS(((nibble[2]<<4)+nibble[3]),2); rtn.result = "@(h'" + convertHex8NibbleU(offset + 4 -(offset%2) + 2*convertInt2NibbleS((nibble[2]<<4)+nibble[3])) + ")" ; break; //10001101dddddddd
-                    case b1111: rtn.instruction = "bf/s  h'" + convertHex2NibbleS(((nibble[2]<<4)+nibble[3]),2); rtn.result = "@(h'" + convertHex8NibbleU(offset + 4 -(offset%2) + 2*convertInt2NibbleS((nibble[2]<<4)+nibble[3])) + ")" ; break; //10001111dddddddd
+                    case b0000: //10000000nnnndddd : MOV.B R0,@(disp,Rn)
+                        nibbleClass[2] = "n";
+                        n = nibble[2];
+                        nibbleClass[3] = "d";
+                        d = nibble[2];
+                        d=(0xf & (long)d);
+                        rtn.instruction = "mov.b [reg]r0[/reg],@(h'[d]" + rHex(d)  + "[/d],[n]r" + rDec(n) + "[/n])";
+                        rtn.hint = "Move Structure Data";
+                        break;
+                    case b0001: //10000001nnnndddd : MOV.W R0,@(disp,Rn)
+                        nibbleClass[2] = "n";
+                        n = nibble[2];
+                        nibbleClass[3] = "d";
+                        d = nibble[2];
+                        d=(0xf & (long)d);
+                        rtn.instruction = "mov.w [reg]r0[/reg],@(h'[d]" + rHex(d)  + "[/d],[n]r" + rDec(n) + "[/n])";
+                        rtn.hint = "Move Structure Data";
+                        break;
+                    case b0100: //10000100mmmmdddd : MOV.B @(disp,Rm),R0
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        nibbleClass[3] = "d";
+                        d = nibble[2];
+                        d=(0xf & (long)d);
+                        rtn.instruction = "mov.b @(h'[d]" + rHex(d)  + "[/d],[m]r" + rDec(m) + "[/m]),[reg]r0[/reg]";
+                        rtn.hint = "Move Structure Data";
+                        break;
+                    case b0101: //10000101mmmmdddd : MOV.W @(disp,Rm),R0
+                        nibbleClass[2] = "m";
+                        m = nibble[2];
+                        nibbleClass[3] = "d";
+                        d = nibble[2];
+                        d=(0xf & (long)d);
+                        rtn.instruction = "mov.w @(h'[d]" + rHex(d)  + "[/d],[m]r" + rDec(m) + "[/m]),[reg]r0[/reg]";
+                        rtn.hint = "Move Structure Data";
+                        break;
+                    case b1000: //10001000iiiiiiii : CMP_EQ #imm,R0
+                        nibbleClass[2] = "i";
+                        nibbleClass[3] = "i";
+                        i = (nibble[2]<<4) + nibble[3];
+                        if ((i&0x80)==0) i=(0xFF & (long)i);
+                        else i=(0xFFFFFF00 | (long)i);
+                        rtn.instruction = "cmp/eq #h'[i]" + rHex(i)  + "[/i],[reg]r0[/reg]";
+                        rtn.hint = "Compare Conditionally : equality";
+                        break;
+                    case b1001: //10001001dddddddd : BT disp
+                        nibbleClass[2] = "d";
+                        nibbleClass[3] = "d";
+                        d = (nibble[2]<<4) + nibble[3];
+                        if ((d&0x80)==0) d=(0xFF & (long)d); else d=(0xFFFFFF00 | (long)d);
+                        rtn.instruction = "bt h'[d]" + rHexNeg(d<<1)  + "[/d]";
+                        rtn.hint = "Branch if True | Not delayed";
+                        rtn.result = "h'" + rHex(pc+(d<<1));
+                        break;
+                    case b1011: //10001011dddddddd : BF disp
+                        nibbleClass[2] = "d";
+                        nibbleClass[3] = "d";
+                        d = (nibble[2]<<4) + nibble[3];
+                        if ((d&0x80)==0) d=(0xFF & (long)d); else d=(0xFFFFFF00 | (long)d);
+                        rtn.instruction = "bf h'[d]" + rHexNeg(d<<1)  + "[/d]";
+                        rtn.hint = "Branch if False | Not delayed";
+                        rtn.result = "h'" + rHex(pc+(d<<1));
+                        break;
+                    case b1101: //10001101dddddddd : BT/S disp
+                        nibbleClass[2] = "d";
+                        nibbleClass[3] = "d";
+                        d = (nibble[2]<<4) + nibble[3];
+                        if ((d&0x80)==0) d=(0xFF & (long)d); else d=(0xFFFFFF00 | (long)d);
+                        rtn.instruction = "bt/s h'[d]" + rHexNeg(d<<1)  + "[/d]";
+                        rtn.hint = "Branch if True | Delayed";
+                        rtn.result = "h'" + rHex(pc+(d<<1));
+                        break;
+                    case b1111: //10001111dddddddd : BF/S disp
+                        nibbleClass[2] = "d";
+                        nibbleClass[3] = "d";
+                        d = (nibble[2]<<4) + nibble[3];
+                        if ((d&0x80)==0) d=(0xFF & (long)d); else d=(0xFFFFFF00 | (long)d);
+                        rtn.instruction = "bf/s h'[d]" + rHexNeg(d<<1)  + "[/d]";
+                        rtn.hint = "Branch if False | Delayed";
+                        rtn.result = "h'" + rHex(pc+(d<<1));
+                        break;
                 } break;
-            case b1001: rtn.instruction = "mov.w  @(h'" + convertHex2NibbleU((nibble[2]<<4)+nibble[3], 2) + ",pc), r" + convertInt(nibble[1]); rtn.result = "@(h'" + convertHex8NibbleU(offset + 4 -(offset%2) + 2*convertInt2NibbleU((nibble[2]<<4)+nibble[3])) + ")" ;break; //1001nnnndddddddd
-            case b1010: rtn.instruction = "bra  h'" + convertHex3NibbleS((nibble[1]<<8)+(nibble[2]<<4)+nibble[3], 2); rtn.result = "@(h'" + convertHex8NibbleU(offset + 4 -(offset%2) + 2*convertInt3NibbleS((nibble[1]<<8)+(nibble[2]<<4)+nibble[3])) + ")" ; break;  //1010dddddddddddd
-            case b1011: rtn.instruction = "bsr  h'" + convertHex3NibbleS((nibble[1]<<8)+(nibble[2]<<4)+nibble[3], 2); rtn.result = "@(h'" + convertHex8NibbleU(offset + 4 -(offset%2) + 2*convertInt3NibbleS((nibble[1]<<8)+(nibble[2]<<4)+nibble[3])) + ")" ; break;
+            case b1001: //1001nnnndddddddd : MOV.W @(disp,PC),Rn
+                nibbleClass[1] = "n";
+                nibbleClass[2] = "d";
+                nibbleClass[3] = "d";
+                d = 0xff&((nibble[2]<<4) + nibble[3]);
+                n = nibble[1];
+                tmp = (d<<1);
+                if ((tmp&0x8000)==0) tmp&=0x0000FFFF; else tmp|=0xFFFF0000;
+                tmp += pc;
+                rtn.instruction = "mov.w @(h'[d]" + rHex(d<<1) + "[/d],[reg]pc[/reg]),[n]r" + rDec(n) + "[/n]";
+                rtn.hint = "Move Immediate Data";
+                rtn.result = "@h'" + rHex(tmp);
+                break;
+           case b1010: //1010dddddddddddd : BRA disp
+                nibbleClass[1] = "d";
+                nibbleClass[2] = "d";
+                nibbleClass[3] = "d";
+                d = (nibble[1]<<8) + (nibble[2]<<4) + nibble[3];
+                if ((d&0x800)==0) d=(0x00000FFF & d); else d=(0xFFFFF000 | d);
+                rtn.instruction = "bra h'[d]" + rHexNeg(d<<1)  + "[/d]";
+                rtn.hint = "Branch | Delayed";
+                rtn.result = "h'" + rHex(pc+(d<<1));
+                break;
+            case b1011: //1011dddddddddddd : BSR disp
+                nibbleClass[1] = "d";
+                nibbleClass[2] = "d";
+                nibbleClass[3] = "d";
+                d = (nibble[1]<<8) + (nibble[2]<<4) + nibble[3];
+                if ((d&0x800)==0) d=(0x00000FFF & d); else d=(0xFFFFF000 | d);
+                rtn.instruction = "bsr h'[d]" + rHexNeg(d<<1)  + "[/d]";
+                rtn.hint = "Branch to Subroutine | Delayed";
+                rtn.result = "h'" + rHex(pc+(d<<1));
+                break;
             case b1100:
                 switch(nibble[1]) {
-                    case b0000: rtn.instruction = "mov.b  r0, @(h'" + convertHex2NibbleU((nibble[2]<<4)+nibble[3]) + ",gbr)"; break; //11000000dddddddd
-                    case b0001: rtn.instruction = "mov.w  r0, @(h'" + convertHex2NibbleU((nibble[2]<<4)+nibble[3], 2) + ",gbr)"; break; //11000001dddddddd
-                    case b0010: rtn.instruction = "mov.l  r0, @(h'" + convertHex2NibbleU((nibble[2]<<4)+nibble[3], 4) + ",gbr)"; break; //11000010dddddddd
-                    case b0011: rtn.instruction = "trapa  #h'" + convertHex2NibbleU(((nibble[2]<<4)+nibble[3])); break; //11000011iiiiiiii
-                    case b0100: rtn.instruction = "mov.b  @(h'" + convertHex2NibbleU((nibble[2]<<4)+nibble[3]) + ",gbr), r0"; break; //11000100dddddddd
-                    case b0101: rtn.instruction = "mov.w  @(h'" + convertHex2NibbleU((nibble[2]<<4)+nibble[3], 2) + ",gbr), r0"; break; //11000101dddddddd
-                    case b0110: rtn.instruction = "mov.l  @(h'" + convertHex2NibbleU((nibble[2]<<4)+nibble[3], 4) + ",gbr), r0"; break; //11000110dddddddd
-                    case b0111: rtn.instruction = "mova  @(h'" + convertHex2NibbleU((nibble[2]<<4)+nibble[3], 4) + ",pc), r0"; rtn.result = "h'" + convertHex8NibbleU(offset + 4 -(offset%4) + 4*convertInt2NibbleU((nibble[2]<<4)+nibble[3])) ; break; //11000111dddddddd
-                    case b1000: rtn.instruction = "tst  #h'" + convertHex2NibbleU(((nibble[2]<<4)+nibble[3])) + ", r0"; break; //11001000iiiiiiii
-                    case b1001: rtn.instruction = "and  #h'" + convertHex2NibbleU(((nibble[2]<<4)+nibble[3])) + ", r0"; break; //11001001iiiiiiii
-                    case b1010: rtn.instruction = "xor  #h'" + convertHex2NibbleU(((nibble[2]<<4)+nibble[3])) + ", r0"; break; //11001010iiiiiiii
-                    case b1011: rtn.instruction = "or  #h'" + convertHex2NibbleU(((nibble[2]<<4)+nibble[3])) + ", r0"; break; //11001011iiiiiiii
-                    case b1100: rtn.instruction = "tst.b  #h'" + convertHex2NibbleU(((nibble[2]<<4)+nibble[3])) + ", @(r0,gbr)"; break; //11001100iiiiiiii
-                    case b1101: rtn.instruction = "and.b  #h'" + convertHex2NibbleU(((nibble[2]<<4)+nibble[3])) + ", @(r0,gbr)"; break; //11001101iiiiiiii
-                    case b1110: rtn.instruction = "xor.b  #h'" + convertHex2NibbleU(((nibble[2]<<4)+nibble[3])) + ", @(r0,gbr)"; break; //11001110iiiiiiii
-                    case b1111: rtn.instruction = "or.b  #h'" + convertHex2NibbleU(((nibble[2]<<4)+nibble[3])) + ", @(r0,gbr)"; break; //11001111iiiiiiii
+                    case b0000: //11000000dddddddd : MOV.B R0,@(disp,GBR)
+                        nibbleClass[2] = "d";
+                        nibbleClass[3] = "d";
+                        d = 0xff&((nibble[2]<<4) + nibble[3]);
+                        rtn.instruction = "mov.b [reg]r0[/reg],@(h'[d]" + rHex(d)  + "[/d],[reg]gbr[/reg])";
+                        rtn.hint = "Move Peripheral Data";
+                        break;
+                    case b0001: //11000001dddddddd : MOV.W R0,@(disp,GBR)
+                        nibbleClass[2] = "d";
+                        nibbleClass[3] = "d";
+                        d = 0xff&((nibble[2]<<4) + nibble[3]);
+                        rtn.instruction = "mov.w [reg]r0[/reg],@(h'[d]" + rHex(d)  + "[/d],[reg]gbr[/reg])";
+                        rtn.hint = "Move Peripheral Data";
+                        break;
+                    case b0010: //11000010dddddddd : MOV.L R0,@(disp,GBR)
+                        nibbleClass[2] = "d";
+                        nibbleClass[3] = "d";
+                        d = 0xff&((nibble[2]<<4) + nibble[3]);
+                        rtn.instruction = "mov.l [reg]r0[/reg],@(h'[d]" + rHex(d)  + "[/d],[reg]gbr[/reg])";
+                        rtn.hint = "Move Peripheral Data";
+                        break;
+                    case b0011: //11000011iiiiiiii : TRAPA #imm
+                        nibbleClass[2] = "i";
+                        nibbleClass[3] = "i";
+                        i = (nibble[2]<<4) + nibble[3];
+                        i=(0x000000FF & i);
+                        rtn.instruction = "trapa #h'[i]" + rHex(i)  + "[/i]";
+                        rtn.hint = "Trap Always";
+                        break;
+                    case b0100: //11000100dddddddd : MOV.B @(disp,GBR),R0
+                        nibbleClass[2] = "d";
+                        nibbleClass[3] = "d";
+                        d = (0x000000FF & (long)((nibble[2]<<4) + nibble[3]));
+                        rtn.instruction = "mov.b @(h'[d]" + rHex(d)  + "[/d],[reg]gbr[/reg]),[reg]r0[/reg]";
+                        rtn.hint = "Move Peripheral Data";
+                        break;
+                    case b0101: //11000101dddddddd : MOV.W @(disp,GBR),R0
+                        nibbleClass[2] = "d";
+                        nibbleClass[3] = "d";
+                        d = (0x000000FF & (long)((nibble[2]<<4) + nibble[3]));
+                        rtn.instruction = "mov.w @(h'[d]" + rHex(d)  + "[/d],[reg]gbr[/reg]),[reg]r0[/reg]";
+                        rtn.hint = "Move Peripheral Data";
+                        break;
+                    case b0110: //11000110dddddddd : MOV.L @(disp,GBR),R0
+                        nibbleClass[2] = "d";
+                        nibbleClass[3] = "d";
+                        d = (0x000000FF & (long)((nibble[2]<<4) + nibble[3]));
+                        rtn.instruction = "mov.l @(h'[d]" + rHex(d)  + "[/d],[reg]gbr[/reg]),[reg]r0[/reg]";
+                        rtn.hint = "Move Peripheral Data";
+                        break;
+                    case b0111: //11000111dddddddd : MOVA @(disp,PC),R0
+                        nibbleClass[2] = "d";
+                        nibbleClass[3] = "d";
+                        d = (nibble[2]<<4) + nibble[3];
+                        d=(0x000000FF & (long)d)<<2;
+                        rtn.instruction = "mova @(h'[d]" + rHex(d) + "[/d],[reg]pc[/reg]),[reg]r0[/reg]";
+                        rtn.hint = "Move Effective Address";
+                        rtn.result = "@h'" + rHex((pc&0xFFFFFFFC)+d);
+                        break;
+                    case b1000: //11001000iiiiiiii : TST #imm,R0
+                        nibbleClass[2] = "i";
+                        nibbleClass[3] = "i";
+                        i = 0x000000FF & (long)((nibble[2]<<4) + nibble[3]);
+                        rtn.instruction = "tst #h'[i]" + rHex(i) + "[/i],[reg]r0[/reg]";
+                        rtn.hint = "Test Logical";
+                        break;
+                    case b1001: //11001001iiiiiiii : AND #imm,R0
+                        nibbleClass[2] = "i";
+                        nibbleClass[3] = "i";
+                        i = (int8_t)((nibble[2]<<4) + nibble[3]);
+                        rtn.instruction = "and #h'[i]" + rHex(i) + "[/i],[reg]r0[/reg]";
+                        rtn.hint = "AND Logical";
+                        break;
+                    case b1010: //11001010iiiiiiii : XOR #imm,R0
+                        nibbleClass[2] = "i";
+                        nibbleClass[3] = "i";
+                        i = 0x000000FF & (long)((nibble[2]<<4) + nibble[3]);
+                        rtn.instruction = "xor #h'[i]" + rHex(i) + "[/i],[reg]r0[/reg]";
+                        rtn.hint = "Exclusive OR Logical";
+                        break;
+                    case b1011: //11001011iiiiiiii : OR #imm,R0
+                        nibbleClass[2] = "i";
+                        nibbleClass[3] = "i";
+                        i = 0x000000FF & (long)((nibble[2]<<4) + nibble[3]);
+                        rtn.instruction = "and #h'[i]" + rHex(i) + "[/i],[reg]r0[/reg]";
+                        rtn.hint = "OR Logical";
+                        break;
+                    case b1100: //11001100iiiiiiii : TST.B #imm,@(R0,GBR)
+                        nibbleClass[2] = "i";
+                        nibbleClass[3] = "i";
+                        i = 0x000000FF & (long)((nibble[2]<<4) + nibble[3]);
+                        rtn.instruction = "tst.b #h'[i]" + rHex(i) + "[/i],@([reg]r0[/reg],gbr)";
+                        rtn.hint = "Test Logical";
+                        break;
+                    case b1101: //11001101iiiiiiii : AND.B #imm,@(R0,GBR)
+                        nibbleClass[2] = "i";
+                        nibbleClass[3] = "i";
+                        i = 0x000000FF & (long)((nibble[2]<<4) + nibble[3]);
+                        rtn.instruction = "and.b #h'[i]" + rHex(i) + "[/i],@([reg]r0[/reg],gbr)";
+                        rtn.hint = "AND Logical";
+                        break;
+                    case b1110: //11001110iiiiiiii : XOR.B #imm,@(R0,GBR)
+                        nibbleClass[2] = "i";
+                        nibbleClass[3] = "i";
+                        i = 0x000000FF & (long)((nibble[2]<<4) + nibble[3]);
+                        rtn.instruction = "xor.b #h'[i]" + rHex(i) + "[/i],@([reg]r0[/reg],gbr)";
+                        rtn.hint = "Exclusive OR Logical";
+                        break;
+                    case b1111: //11001111iiiiiiii : OR.B #imm,@(R0,GBR)
+                        nibbleClass[2] = "i";
+                        nibbleClass[3] = "i";
+                        i = 0x000000FF & (long)((nibble[2]<<4) + nibble[3]);
+                        rtn.instruction = "and.b #h'[i]" + rHex(i) + "[/i],@([reg]r0[/reg],gbr)";
+                        rtn.hint = "OR Logical";
+                        break;
                 } break;
-            case b1101: rtn.instruction = "mov.l  @(h'" + convertHex2NibbleU((nibble[2]<<4)+nibble[3], 4) + ",pc), r" + convertInt(nibble[1]); rtn.result = "@(h'" + convertHex8NibbleU(offset + 4 -(offset%4) + 4*convertInt2NibbleU((nibble[2]<<4)+nibble[3])) + ")" ;break; //1101nnnndddddddd
-            case b1110: rtn.instruction = "mov  #h'" + convertHex8NibbleU(((nibble[2]<<4)+nibble[3])) + ", r" + convertInt(nibble[1]); break; //1110nnnniiiiiiii
+            case b1101: //1101nnnndddddddd : MOV.L @(disp,PC),Rn
+                nibbleClass[1] = "n";
+                nibbleClass[2] = "d";
+                nibbleClass[3] = "d";
+                n = nibble[1];
+                d = (nibble[2]<<4) + nibble[3];
+                d=(0x000000FF & (long)d)<<2;
+                rtn.instruction = "mov.l @(h'[d]" + rHex(d) + "[/d],[reg]pc[/reg]),[n]r" + rDec(n) + "[/n]";
+                rtn.hint = "Move Immediate Data";
+                rtn.result = "@h'" + rHex((pc&0xFFFFFFFC)+d);
+                break;
+            case b1110: //1110nnnniiiiiiii :  MOV #imm,Rn
+                nibbleClass[1] = "n";
+                nibbleClass[2] = "i";
+                nibbleClass[3] = "i";
+                n = nibble[1];
+                i = (nibble[2]<<4) + nibble[3];
+                if ((i&0x80)==0) i = (0x000000FF & (long)i); else i = (0xFFFFFF00 | (long)i);
+                rtn.instruction = "mov #h'[i]" + rHex(i) + "[/i],[n]r" + rDec(n) + "[/n]";
+                rtn.hint = "Move Immediate Data";
+                break;
         }
-
         //Prepare html strings
         //value
             for(int i = 0; i <= 3 ; i++)
@@ -1454,154 +1502,17 @@ InstructionRow Disassembler::read(uint32_t offset, int32_t value)
                     + ".m{color:#03318d;}"
                     + ".d{color:#6d6afc;}"
                     + ".reg{color:#d6a005;}"
-                    + ".res{color:pink;}</style></head><body>";
+                    + ".i{color:red;}</style></head><body>";
             rtn.instruction = css + rtn.instruction + "</body></html>";
-            rtn.result = css + rtn.result + "</body></html>";
+            rtn.result = rtn.result;
             rtn.value = css + rtn.value + "</body></html>";
     return rtn;
 }
 
-int32_t Disassembler::coreReg(QString string, Core *core, bool *ok)
+QString Disassembler::rHexNeg(int32_t value)
 {
-    *ok = false;
-    QRegExp regR("^r([0-9]{1,2})$");
-    if(regR.indexIn(string) != -1)
-    {
-        bool ok2;
-        ushort n = regR.cap(1).toUShort(&ok2);
-        if(n <= 15 && ok2)
-        {
-            *ok = true;
-            return core->getR(n);
-        }
-    }
-    else if(string == "pc"){
-        *ok = true;
-        return core->getPC();
-    }
-    return 0;
-}
-
-QString Disassembler::coreCalls(QString string, Core *core)
-{
-    //Core reg calls
-        QRegExp regRegex("\\[coreReg\\]([^\\[]*)\\[\\/coreReg\\]");
-        int pos = 0;
-        while((pos=regRegex.indexIn(string,pos)) != -1)
-        {
-            bool ok;
-            int32_t value = coreReg(regRegex.cap(1),core,&ok);
-            if(ok){
-                string = string.left(pos) + "h'" + QString::number(value,16).right(8)
-                        + string.right(string.length() - regRegex.matchedLength() - pos);
-            }
-
-            pos ++;
-        }
-   //Core calc calls
-    QRegExp regex("\\[core\\]([^\\[]*)\\[\\/core\\]");
-    pos = 0;
-    while((pos=regex.indexIn(string,pos)) != -1)
-    {
-        //Sum
-        QRegExp regPlus("^\\+\\(([a-z0-9]+),([a-z0-9]+)\\)$");
-        if(regPlus.indexIn(regex.cap(1)) != -1)
-        {
-            bool ok, ok2;
-            int32_t val1 = coreReg(regPlus.cap(1),core,&ok);
-            int32_t val2 = coreReg(regPlus.cap(2),core,&ok2);
-            if(ok && ok2)
-            {
-                string = string.left(pos) + "h'" + QString::number(val1 + val2,16).right(8)
-                            + string.right(string.length() - regex.matchedLength() - pos);
-            }
-        }
-        pos ++;
-        qDebug() << pos;
-        qDebug() << string[pos];
-    }
-    return string;
-}
-
-
-int Disassembler::convertIntMain(unsigned int number, int nbrNibble, bool Signed)
-{
-    number &= 0xFFFFFFFF>>4*(8-nbrNibble);
-    if(Signed && number&(0x8<<((nbrNibble-1)*4))) //if negatif
-    {
-        number |= (0xFFFFFFFF<<4*(nbrNibble))&0xFFFFFFFF;
-    }
-    return (int)number;
-}
-int Disassembler::convertInt2NibbleS(int number){
-    return convertIntMain(number, 2, true);}
-int Disassembler::convertInt2NibbleU(int number){
-    return convertIntMain(number, 2, false);}
-int Disassembler::convertInt3NibbleS(int number){
-    return convertIntMain(number, 3, true);}
-int Disassembler::convertInt8NibbleS(int number){
-    return convertIntMain(number, 8, true);}
-
-QString Disassembler::convertHexMain(unsigned int number, int nbrNibble, bool Signed, int multiple)
-{
-    std::stringstream ss;
-    if(Signed && number&(0x8<<((nbrNibble-1)*4))) //if negatif
-    {
-        ss << '-';
-        number = (~number)+1;
-    }
-        number &= 0xFFFFFFFF>>4*(8-nbrNibble);
-        number *= multiple;
-        ss << std::hex << number;
-        return (QString(ss.str().c_str()));
-}
-
-QString Disassembler::convertHexNibbleS(int number,int multiple){
-    return convertHexMain(number, 1, true, multiple);}
-QString Disassembler::convertHexNibbleU(int number,int multiple){
-    return convertHexMain(number, 1, false, multiple);}
-
-QString Disassembler::convertHex2NibbleS(int number,int multiple){
-    return convertHexMain(number, 2, true, multiple);}
-QString Disassembler::convertHex2NibbleU(int number,int multiple){
-    return convertHexMain(number, 2, false, multiple);}
-
-QString Disassembler::convertHex3NibbleS(int number,int multiple){
-    return convertHexMain(number, 3, true, multiple);}
-QString Disassembler::convertHex3NibbleU(int number,int multiple){
-    return convertHexMain(number, 3, false, multiple);}
-
-QString Disassembler::convertHex8NibbleS(int number,int multiple){
-    return convertHexMain(number, 8, true, multiple);}
-QString Disassembler::convertHex8NibbleU(int number,int multiple){
-    return convertHexMain(number, 8, false, multiple);}
-
-QString Disassembler::convertInt(int number, int base)
-{
-    std::stringstream ss;
-    if(base == 16)
-        ss << std::hex << number;
+    if(value < 0)
+        return ("-" + rHex(-value));
     else
-        ss << number;
-    return QString(ss.str().c_str());
-}
-
-
-QString Disassembler::getInstruction()
-{
-    return this->instruction;
-}
-
-QString Disassembler::getResult()
-{
-    return this->result;
-}
-QString Disassembler::getHint()
-{
-    return this->hint;
-}
-
-QString Disassembler::getValue()
-{
-    return this->value;
+        return rHex(value);
 }

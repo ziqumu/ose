@@ -12,6 +12,7 @@ void CoreThread::init(QString flashLink, DisplayDriver* DD)
 
      DD->setRegister(7);
      DD->putData(0xFF);
+     initInstructionsList(true);
 }
 
 int CoreThread::step_into(bool loopmode)
@@ -48,15 +49,18 @@ int CoreThread::step_into(bool loopmode)
             else
                 core->setPC(core->getPC()+2);
         //emulator log
-            if(e.getAction() == EMULATOR_ACTION_EXECUTE)
-                emit logError(QString(e.what()));
+            if(e.getAction() == EMULATOR_ACTION_EXECUTE){
+                emit logError(QString(e.what()),e.getPC()-4);
+            }
             else
-                emit logWarning(QString(e.what()));
+                emit logWarning(QString(e.what()),e.getPC()-4);
 
+        if(!loopmode)
+            initInstructionsList(true);
         return e.getAction();
     }
     if(!loopmode)
-        updateInstructionsList();
+        initInstructionsList(true);
     return 0;
 }
 
@@ -65,22 +69,45 @@ void CoreThread::play()
     while(true)
     {
         if(step_into(true) == EMULATOR_ACTION_EXECUTE)
+        {
+            initInstructionsList(true);
+            emit stop();
             break;
+        }
         if(isStopRequested())
         {
             requestStop(false);
+            initInstructionsList(true);
             break;
         }
     }
 }
 
-void CoreThread::updateInstructionsList(unsigned int nbrLine)
+void CoreThread::Write_Word(uint32_t offset, uint16_t value)
 {
-    uint32_t offset = core->getPC()-4;
-    updateInstructionsListTo(offset, nbrLine);
+    try
+    {
+        uint16_t oldvalue = core->Read_Word(offset);
+        if(value != oldvalue){
+            core->Write_Word(offset,value);
+            emit logInfo("Value modified (old value : 0x" + QString::number(oldvalue,16) + ")",offset);
+            initInstructionsList();
+        }
+    }
+    catch (emulator_exception & e )
+    {
+        emit logWarning(QString(e.what()),offset);
+        initInstructionsList();
+    }
 }
 
-void CoreThread::updateInstructionsListTo(uint32_t offset, unsigned int nbrLine)
+void CoreThread::initInstructionsList(bool forceCenter, unsigned int nbrLine)
+{
+    uint32_t offset = core->getPC()-4;
+    initInstructionsListTo(offset, forceCenter, nbrLine);
+}
+
+void CoreThread::initInstructionsListTo(uint32_t offset, bool forceCenter, unsigned int nbrLine)
 {
     offset = offset-(nbrLine*2);
     QVector<InstructionRow> rows;
@@ -92,9 +119,21 @@ void CoreThread::updateInstructionsListTo(uint32_t offset, unsigned int nbrLine)
         rows[i] = disassembler.read(offset+i*2);
 
     }
-    emit setInstructionsList(rows);
+    emit setInitInstructionsList(rows, forceCenter);
+    initRegistersList();
 }
 
+void CoreThread::initRegistersList()
+{
+    Registers reg;
+    //general registers
+    for(unsigned int i = 0 ; i < 16; i++)
+    {
+        reg.r[i] = core->getR(i);
+    }
+    reg.lastJumpOrigin = core->getLastJumpOrigin();
+    emit setRegistersList(reg);
+}
 
 //Stop loop system
     void CoreThread::requestStop(bool state)

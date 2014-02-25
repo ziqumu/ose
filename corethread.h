@@ -13,6 +13,7 @@
 #include <exception>
 #include "instructions_widget.h"
 #include "disassembler.h"
+#include "register_widget.h"
 
 class CoreThread : public QObject
 {
@@ -26,20 +27,23 @@ private:
     bool isStopRequested();
 public slots:
     void init(QString flashLink, DisplayDriver* DD);
-    void updateInstructionsListTo(uint32_t offset, unsigned int nbrLine = INSTRUCTIONWIDGET_ROWNBR);
-    void updateInstructionsList(unsigned int nbrLine = INSTRUCTIONWIDGET_ROWNBR);
-
+    //Prepare data for each lines
+    void initInstructionsList(bool forceCenter = false, unsigned int nbrLine = INSTRUCTIONWIDGET_ROWNBR);
+    void initInstructionsListTo(uint32_t offset, bool forceCenter = false, unsigned int nbrLine = INSTRUCTIONWIDGET_ROWNBR);
+    void initRegistersList();
     int step_into(bool loopmode = false);
+    void Write_Word(uint32_t offset, uint16_t value);
     void play();
 
 signals:
-    void test();
-    void setInstructionsList(QVector<InstructionRow> rows);
-    void log(QString message);
-    void logError(QString message);
-    void logWarning(QString message);
-    void logInfo(QString message);
-    void logDebug(QString message);
+    void stop();
+    void setRegistersList(Registers newReg);
+    void setInitInstructionsList(QVector<InstructionRow> rows, bool forceCenter = false);
+    void log(QString message, uint32_t offset = 0xffffffff);
+    void logError(QString message, uint32_t offset = 0xffffffff);
+    void logWarning(QString message, uint32_t offset = 0xffffffff);
+    void logInfo(QString message, uint32_t offset = 0xffffffff);
+    void logDebug(QString message, uint32_t offset = 0xffffffff);
 };
 
 #endif // CORETHREAD_H

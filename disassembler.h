@@ -23,37 +23,10 @@ class Disassembler
 {
 
 public:
-    QString instruction;
-    QString result;
-    QString hint;
-    QString value;
-    bool getBetterResults;
-
-    Disassembler(Core* core=NULL, bool getBetterResults = true);
+    Disassembler(Core* core=NULL);
     InstructionRow read(uint32_t offset, int32_t value = -1);
-    QString getInstruction();
-    QString getResult();
-    QString getHint();
-    QString getValue();
 private:
-    int convertIntMain(unsigned int number, int nbrNibble, bool Signed = true);
-    int convertInt2NibbleS(int number);
-    int convertInt2NibbleU(int number);
-    int convertInt3NibbleS(int number);
-    int convertInt8NibbleS(int number);
-    QString convertHexMain(unsigned int number, int nbrNibble, bool Signed = true, int multiple = 1);
-    QString convertHexNibbleS(int number,int multiple=1);
-    QString convertHexNibbleU(int number,int multiple=1);
-    QString convertHex2NibbleS(int number,int multiple=1);
-    QString convertHex2NibbleU(int number,int multiple=1);
-    QString convertHex3NibbleS(int number,int multiple=1);
-    QString convertHex3NibbleU(int number,int multiple=1);
-    QString convertHex8NibbleS(int number,int multiple=1);
-    QString convertHex8NibbleU(int number,int multiple=1);
-    QString convertInt(int number, int base = 10);
-
-    QString coreCalls(QString string, Core *core);
-    int32_t coreReg(QString string, Core *core, bool *ok = NULL);
+    QString rHexNeg(int32_t value);
     Core* core;
 };
 

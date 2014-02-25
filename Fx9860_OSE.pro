@@ -23,7 +23,7 @@ SOURCES += main.cpp\
     refresh.cpp \
     instructions_widget.cpp \
     disassembler.cpp \
-    instructionslabel.cpp
+    register_widget.cpp
 
 HEADERS  += mainwindow.h \
     screen.h \
@@ -34,7 +34,7 @@ HEADERS  += mainwindow.h \
     refresh.h \
     instructions_widget.h \
     disassembler.h \
-    instructionslabel.h
+    register_widget.h
 
 FORMS    += mainwindow.ui
 
